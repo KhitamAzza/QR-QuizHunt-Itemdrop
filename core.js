@@ -7,6 +7,53 @@ let currentUser = null;
 let isGameActive = false;
 
 // ==========================================
+// GAME CONFIG — tunable rules, fetched from Firebase (/config)
+// ==========================================
+// These defaults are used until (or unless) /config.json in Firebase
+// provides overrides, so the game still works with zero setup. To change
+// rarity points, per-rarity time limits, speed/timeout multipliers, or the
+// bomb penalty WITHOUT editing/redeploying code, write a matching node
+// under /config in the Realtime Database — see the note at the end of this
+// file for the exact shape and how to set it via the console/REST API.
+let GAME_CONFIG = {
+    rarityPoints:       { common: 10, rare: 25, epic: 50, legendary: 100, mythic: 250 },
+    timeLimits:         { common: 30000, rare: 20000, epic: 15000, legendary: 10000, mythic: 5000 }, // ms
+    rarityToTier:       { common: 1, rare: 1, epic: 2, legendary: 2, mythic: 3 }, // which loot tier a rarity can drop
+    speedThresholds:    { fast: 0.833, medium: 0.333 }, // fraction of timeLimit remaining, for score/loot multiplier
+    timeoutMultipliers: { 0: 1.0, 1: 0.7, 2: 0.5 },     // 3+ timeouts on one question always = 0, not configurable
+    bombPenalty: 30
+};
+
+// Kicks off immediately when core.js loads (before any script tag runs
+// login logic), so by the time a student finishes typing a password the
+// fetch has almost always already resolved. Every place that reads
+// GAME_CONFIG for scoring awaits this first, so it's always safe even on a
+// slow connection.
+let gameConfigLoaded = fetchGameConfig();
+
+async function fetchGameConfig() {
+    try {
+        const res = await fetch(`${FIREBASE_URL}/config.json?auth=${FIREBASE_SECRET}`);
+        const remote = await res.json();
+        if (remote) {
+            // Merge one level deep per section, so a config node that only
+            // overrides e.g. rarityPoints still falls back to the built-in
+            // defaults for timeLimits, multipliers, etc.
+            GAME_CONFIG = {
+                rarityPoints: { ...GAME_CONFIG.rarityPoints, ...(remote.rarityPoints || {}) },
+                timeLimits: { ...GAME_CONFIG.timeLimits, ...(remote.timeLimits || {}) },
+                rarityToTier: { ...GAME_CONFIG.rarityToTier, ...(remote.rarityToTier || {}) },
+                speedThresholds: { ...GAME_CONFIG.speedThresholds, ...(remote.speedThresholds || {}) },
+                timeoutMultipliers: { ...GAME_CONFIG.timeoutMultipliers, ...(remote.timeoutMultipliers || {}) },
+                bombPenalty: (typeof remote.bombPenalty === 'number') ? remote.bombPenalty : GAME_CONFIG.bombPenalty
+            };
+        }
+    } catch (e) {
+        console.error("Failed to load /config from Firebase — using built-in defaults.", e);
+    }
+}
+
+// ==========================================
 // 2. DOM ELEMENTS (Shared & Core)
 // ==========================================
 const loginScreen = document.getElementById('login-screen');
@@ -47,6 +94,9 @@ function showGameOver() {
 loginBtn.addEventListener('click', async () => {
     const password = passwordInput.value.trim();
     if (!password) return alert("Please enter your password!");
+
+    // Make sure tunable rules are loaded before either dashboard uses them
+    await gameConfigLoaded;
 
     // Teacher Route
     if (password.toLowerCase() === 'admin') {
@@ -108,7 +158,6 @@ loginBtn.addEventListener('click', async () => {
             // 2. Fetch Questions & Calculate Progress (Excluding Hints AND Bombs)
             const questionsRes = await fetch(`${FIREBASE_URL}/questions.json?auth=${FIREBASE_SECRET}`);
             const allQuestions = await questionsRes.json();
-            const RARITY_POINTS = { common: 10, rare: 25, epic: 50, legendary: 100, mythic: 250 };
             
             currentUser.totalQuestions = 0;
             currentUser.questionMaxUses = {};
@@ -125,7 +174,7 @@ loginBtn.addEventListener('click', async () => {
                     currentUser.totalQuestions++;
                     currentUser.questionMaxUses[qId] = q.max_uses || 99;
                     const rarity = q.rarity ? q.rarity.toLowerCase().trim() : 'common';
-                    currentUser.maxPossibleScore += (RARITY_POINTS[rarity] || 10);
+                    currentUser.maxPossibleScore += (GAME_CONFIG.rarityPoints[rarity] || 10);
                 }
             }
             if (currentUser.maxPossibleScore === 0) currentUser.maxPossibleScore = 1;
@@ -155,7 +204,7 @@ loginBtn.addEventListener('click', async () => {
                             // back to flat rarity points.
                             if (chestType !== 'bomb' && sub.selected_answer === q.correct_answer) {
                                 currentUser.correctCount++;
-                                currentUser.rawScore += (typeof sub.points_earned === 'number' ? sub.points_earned : (RARITY_POINTS[rarity] || 10));
+                                currentUser.rawScore += (typeof sub.points_earned === 'number' ? sub.points_earned : (GAME_CONFIG.rarityPoints[rarity] || 10));
                             }
                         }
                     }
@@ -252,3 +301,21 @@ function handleLogout() {
 logoutBtn.addEventListener('click', handleLogout);
 teacherLogoutBtn.addEventListener('click', handleLogout);
 gameOverLogoutBtn.addEventListener('click', handleLogout);
+// ==========================================
+// HOW TO SET /config IN FIREBASE
+// ==========================================
+// Paste this into the Firebase console at the root of your RTDB (or PUT it
+// to ${FIREBASE_URL}/config.json?auth=...) to override any of the defaults
+// above. You only need to include the fields you want to change — anything
+// left out keeps its built-in default.
+//
+// {
+//   "config": {
+//     "rarityPoints":       { "common": 10, "rare": 25, "epic": 50, "legendary": 100, "mythic": 250 },
+//     "timeLimits":         { "common": 30000, "rare": 20000, "epic": 15000, "legendary": 10000, "mythic": 5000 },
+//     "rarityToTier":       { "common": 1, "rare": 1, "epic": 2, "legendary": 2, "mythic": 3 },
+//     "speedThresholds":    { "fast": 0.833, "medium": 0.333 },
+//     "timeoutMultipliers": { "0": 1.0, "1": 0.7, "2": 0.5 },
+//     "bombPenalty": 30
+//   }
+// }
