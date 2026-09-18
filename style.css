@@ -745,3 +745,32 @@ LOOT & INVENTORY MODALS
     #student-dashboard #progress-tracker { padding: 8px 15px; }
     #student-dashboard .scanner-container h3 { font-size: 1rem; }
 }
+
+/* ==========================================
+   GAME RULES / CONFIG TAB
+   ========================================== */
+.config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+}
+.config-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.85rem;
+    color: var(--text-color);
+    opacity: 0.85;
+}
+.config-grid input {
+    padding: 8px;
+    font-size: 15px;
+    background: #14100b;
+    color: var(--text-color);
+    border: 2px solid var(--card-border);
+    border-radius: 4px;
+}
+.config-grid input:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}

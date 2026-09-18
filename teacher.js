@@ -14,6 +14,9 @@ const refreshScoresBtn = getEl('refresh-scores-btn');
 const leaderboardBody = getEl('leaderboard-body');
 const purgeSubmissionsBtn = getEl('purge-submissions-btn');
 const exportSheetsBtn = getEl('export-sheets-btn');
+const saveConfigBtn = getEl('save-config-btn');
+const configSaveStatus = getEl('config-save-status');
+const configLockNotice = getEl('config-lock-notice');
 
 let currentLeaderboardData = [];
 let currentMaxScore = 0;
@@ -25,7 +28,7 @@ const tabBtns = document.querySelectorAll('.tab-btn');
 const tabContents = document.querySelectorAll('.tab-content');
 
 tabBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
         // Remove active classes from all buttons and contents
         tabBtns.forEach(b => b.classList.remove('active-tab'));
         tabContents.forEach(c => c.classList.remove('active-tab-content'));
@@ -35,15 +38,27 @@ tabBtns.forEach(btn => {
         const targetId = btn.getAttribute('data-tab');
         const targetContent = document.getElementById(targetId);
         if (targetContent) targetContent.classList.add('active-tab-content');
+
+        // Re-check game status when opening the config tab, so the lock
+        // reflects reality even if the game was started/stopped from
+        // another tab or device since this dashboard last loaded.
+        if (targetId === 'tab-config') {
+            await checkTeacherGameStatus();
+            populateConfigForm();
+            updateConfigLockState(isGameActive);
+        }
     });
 });
 
 // ==========================================
 // 3. TEACHER DASHBOARD INIT & STATUS
 // ==========================================
-function loadTeacherDashboard() {
-    checkTeacherGameStatus();
+async function loadTeacherDashboard() {
+    await checkTeacherGameStatus();
     calculateAndRenderLeaderboard();
+    await gameConfigLoaded;
+    populateConfigForm();
+    updateConfigLockState(isGameActive);
 }
 
 async function checkTeacherGameStatus() {
@@ -83,7 +98,9 @@ if (startGameBtn) {
         await fetch(`${FIREBASE_URL}/gameSettings.json?auth=${FIREBASE_SECRET}`, {
             method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings)
         });
-        alert("Game Started!"); checkTeacherGameStatus();
+        alert("Game Started!");
+        await checkTeacherGameStatus();
+        updateConfigLockState(isGameActive);
     });
 }
 
@@ -93,7 +110,9 @@ if (stopGameBtn) {
         await fetch(`${FIREBASE_URL}/gameSettings.json?auth=${FIREBASE_SECRET}`, {
             method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isActive: false })
         });
-        alert("Game Ended."); checkTeacherGameStatus();
+        alert("Game Ended.");
+        await checkTeacherGameStatus();
+        updateConfigLockState(isGameActive);
     });
 }
 
@@ -105,7 +124,7 @@ if (refreshScoresBtn) refreshScoresBtn.addEventListener('click', calculateAndRen
 async function calculateAndRenderLeaderboard() {
     if (!leaderboardBody) return;
     leaderboardBody.innerHTML = "<tr><td colspan='6'>Calculating scores...</td></tr>";
-    const RARITY_POINTS = { common: 10, rare: 25, epic: 50, legendary: 100, mythic: 250 };
+    await gameConfigLoaded; // safety net — already loaded by the time login gets here
 
     try {
         const [studentsRes, questionsRes, submissionsRes] = await Promise.all([
@@ -125,7 +144,7 @@ async function calculateAndRenderLeaderboard() {
          // Skip optional chests so they don't inflate the max possible score
          if (q && (q.chest_type === 'bomb' || q.chest_type === 'hint')) continue; 
          const rarity = q.rarity ? q.rarity.toLowerCase().trim() : 'common';
-         maxPossibleScore += (RARITY_POINTS[rarity] || 10);
+         maxPossibleScore += (GAME_CONFIG.rarityPoints[rarity] || 10);
      }
         if (maxPossibleScore === 0) maxPossibleScore = 1; 
         currentMaxScore = maxPossibleScore;
@@ -148,7 +167,7 @@ async function calculateAndRenderLeaderboard() {
             if (qId === 'BOMB_TRAP' || (question && question.chest_type === 'bomb')) {
                 if (!scores[studentPwd].questionsAnswered.has(qId)) {
                     scores[studentPwd].questionsAnswered.add(qId);
-                    scores[studentPwd].rawScore -= 30;
+                    scores[studentPwd].rawScore -= GAME_CONFIG.bombPenalty;
                 }
                 return;
             }
@@ -163,8 +182,13 @@ async function calculateAndRenderLeaderboard() {
             if (!scores[studentPwd].questionsAnswered.has(qId)) {
                 scores[studentPwd].questionsAnswered.add(qId);
                 if (sub.selected_answer === question.correct_answer) {
+                    // Use the score recorded on the submission itself (base
+                    // rarity points x speed/timeout multipliers) so this always
+                    // matches what the student actually earned. Older
+                    // submissions made before scoring was recorded fall back
+                    // to flat rarity points.
                     const rarity = question.rarity ? question.rarity.toLowerCase().trim() : 'common';
-                    scores[studentPwd].rawScore += (RARITY_POINTS[rarity] || 10);
+                    scores[studentPwd].rawScore += (typeof sub.points_earned === 'number' ? sub.points_earned : (GAME_CONFIG.rarityPoints[rarity] || 10));
                 }
             }
         });
@@ -239,5 +263,134 @@ if (purgeSubmissionsBtn) {
             alert("✅ Answers & announcements cleared!"); calculateAndRenderLeaderboard();
         } catch (error) { alert("❌ Failed to clear."); }
         finally { purgeSubmissionsBtn.textContent = "Hapus semua jawaban"; purgeSubmissionsBtn.disabled = false; }
+    });
+}
+// ==========================================
+// 7. GAME RULES EDITOR (writes /config in Firebase)
+// ==========================================
+// Values here become GAME_CONFIG for every student (see core.js). Locked
+// while a game is in progress: changing rarity points or time limits
+// mid-session would mean some students played under the old rules and
+// others under the new ones on the same leaderboard, and a student already
+// logged in wouldn't pick up the change until they log out/in anyway (see
+// core.js — config is fetched once at login). Safer to require the game be
+// stopped first.
+
+function populateConfigForm() {
+    if (!getEl('cfg-points-common')) return; // config tab not present in this HTML build
+
+    getEl('cfg-points-common').value = GAME_CONFIG.rarityPoints.common;
+    getEl('cfg-points-rare').value = GAME_CONFIG.rarityPoints.rare;
+    getEl('cfg-points-epic').value = GAME_CONFIG.rarityPoints.epic;
+    getEl('cfg-points-legendary').value = GAME_CONFIG.rarityPoints.legendary;
+    getEl('cfg-points-mythic').value = GAME_CONFIG.rarityPoints.mythic;
+
+    getEl('cfg-time-common').value = GAME_CONFIG.timeLimits.common / 1000;
+    getEl('cfg-time-rare').value = GAME_CONFIG.timeLimits.rare / 1000;
+    getEl('cfg-time-epic').value = GAME_CONFIG.timeLimits.epic / 1000;
+    getEl('cfg-time-legendary').value = GAME_CONFIG.timeLimits.legendary / 1000;
+    getEl('cfg-time-mythic').value = GAME_CONFIG.timeLimits.mythic / 1000;
+
+    getEl('cfg-speed-fast').value = GAME_CONFIG.speedThresholds.fast;
+    getEl('cfg-speed-medium').value = GAME_CONFIG.speedThresholds.medium;
+
+    getEl('cfg-timeout-0').value = GAME_CONFIG.timeoutMultipliers[0];
+    getEl('cfg-timeout-1').value = GAME_CONFIG.timeoutMultipliers[1];
+    getEl('cfg-timeout-2').value = GAME_CONFIG.timeoutMultipliers[2];
+
+    getEl('cfg-bomb-penalty').value = GAME_CONFIG.bombPenalty;
+}
+
+function updateConfigLockState(locked) {
+    document.querySelectorAll('#tab-config input').forEach(input => { input.disabled = locked; });
+    if (saveConfigBtn) saveConfigBtn.disabled = locked;
+    if (configLockNotice) configLockNotice.classList.toggle('hidden', !locked);
+    if (!locked && configSaveStatus) configSaveStatus.textContent = '';
+}
+
+// Re-fetches game status fresh rather than trusting the cached isGameActive
+// var, since the teacher could have started the game from a different
+// device/tab a moment ago. Fails "locked" if the check itself fails, so a
+// network hiccup can't accidentally let a write through.
+async function isGameCurrentlyActive() {
+    try {
+        const res = await fetch(`${FIREBASE_URL}/gameSettings.json?auth=${FIREBASE_SECRET}`);
+        const settings = await res.json();
+        if (!settings || !settings.isActive) return false;
+        return Date.now() < settings.endTime;
+    } catch (error) {
+        console.error("Could not verify game status before saving config:", error);
+        return true; // fail safe: block the write if we're not sure
+    }
+}
+
+if (saveConfigBtn) {
+    saveConfigBtn.addEventListener('click', async () => {
+        saveConfigBtn.disabled = true;
+        saveConfigBtn.textContent = "Checking...";
+
+        const active = await isGameCurrentlyActive();
+        if (active) {
+            isGameActive = true;
+            updateConfigLockState(true);
+            if (configSaveStatus) {
+                configSaveStatus.style.color = "var(--danger-color)";
+                configSaveStatus.textContent = "⚠️ Game sedang berjalan — hentikan dulu untuk mengubah aturan.";
+            }
+            saveConfigBtn.textContent = "💾 Simpan Aturan";
+            return;
+        }
+
+        const newConfig = {
+            rarityPoints: {
+                common: Number(getEl('cfg-points-common').value) || 10,
+                rare: Number(getEl('cfg-points-rare').value) || 25,
+                epic: Number(getEl('cfg-points-epic').value) || 50,
+                legendary: Number(getEl('cfg-points-legendary').value) || 100,
+                mythic: Number(getEl('cfg-points-mythic').value) || 250
+            },
+            timeLimits: {
+                common: (Number(getEl('cfg-time-common').value) || 30) * 1000,
+                rare: (Number(getEl('cfg-time-rare').value) || 20) * 1000,
+                epic: (Number(getEl('cfg-time-epic').value) || 15) * 1000,
+                legendary: (Number(getEl('cfg-time-legendary').value) || 10) * 1000,
+                mythic: (Number(getEl('cfg-time-mythic').value) || 5) * 1000
+            },
+            // Not exposed in this form (rarely tweaked) — carried over as-is
+            // so saving the form above doesn't wipe it out.
+            rarityToTier: GAME_CONFIG.rarityToTier,
+            speedThresholds: {
+                fast: Number(getEl('cfg-speed-fast').value) || 0.833,
+                medium: Number(getEl('cfg-speed-medium').value) || 0.333
+            },
+            timeoutMultipliers: {
+                0: Number(getEl('cfg-timeout-0').value),
+                1: Number(getEl('cfg-timeout-1').value),
+                2: Number(getEl('cfg-timeout-2').value)
+            },
+            bombPenalty: Number(getEl('cfg-bomb-penalty').value) || 30
+        };
+
+        saveConfigBtn.textContent = "Menyimpan...";
+        try {
+            await fetch(`${FIREBASE_URL}/config.json?auth=${FIREBASE_SECRET}`, {
+                method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newConfig)
+            });
+            GAME_CONFIG = newConfig; // reflect immediately in this tab too
+            if (configSaveStatus) {
+                configSaveStatus.style.color = "#4CAF50";
+                configSaveStatus.textContent = "✅ Aturan tersimpan.";
+            }
+        } catch (error) {
+            console.error("Failed to save config:", error);
+            if (configSaveStatus) {
+                configSaveStatus.style.color = "var(--danger-color)";
+                configSaveStatus.textContent = "❌ Gagal menyimpan aturan.";
+            }
+        } finally {
+            saveConfigBtn.disabled = false;
+            saveConfigBtn.textContent = "💾 Simpan Aturan";
+        }
     });
 }

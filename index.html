@@ -100,6 +100,7 @@
                 <button class="tab-btn active-tab" data-tab="tab-controls">🎮 Game Controls</button>
                 <button class="tab-btn" data-tab="tab-leaderboard">🏆 Leaderboard & Export</button>
                 <button class="tab-btn" data-tab="tab-data">⚙️ Manajemen data</button>
+                <button class="tab-btn" data-tab="tab-config">🔧 Aturan Game</button>
             </div>
 
             <!-- Tab 1: Game Controls -->
@@ -152,6 +153,57 @@
                     <h2 style="color: var(--danger-color);">⚠️ Danger Zone</h2>
                     <p style="margin-bottom: 15px; color: #666;">Hati-hati, ini akan menghapus seluruh data di sesi ini.</p>
                     <button id="purge-submissions-btn" class="btn-logout" style="background-color: #ff9800; width: auto; padding: 12px 24px;">🗑️ Clear All Answers</button>
+                </div>
+            </div>
+
+            <!-- Tab 4: Game Rules / Config -->
+            <div id="tab-config" class="tab-content">
+                <div class="control-panel">
+                    <h2>🔧 Aturan Game</h2>
+                    <p id="config-lock-notice" class="hidden" style="color: var(--danger-color); font-weight: bold; margin-bottom: 15px;">
+                        ⚠️ Game sedang berjalan — hentikan game dulu di tab "Game Controls" untuk mengubah aturan.
+                    </p>
+
+                    <h3 style="margin-top: 10px; margin-bottom: 8px; color: var(--primary-color);">Poin per Rarity</h3>
+                    <div class="config-grid">
+                        <label>Common<input type="number" id="cfg-points-common"></label>
+                        <label>Rare<input type="number" id="cfg-points-rare"></label>
+                        <label>Epic<input type="number" id="cfg-points-epic"></label>
+                        <label>Legendary<input type="number" id="cfg-points-legendary"></label>
+                        <label>Mythic<input type="number" id="cfg-points-mythic"></label>
+                    </div>
+
+                    <h3 style="margin-top: 20px; margin-bottom: 8px; color: var(--primary-color);">Batas Waktu (detik)</h3>
+                    <div class="config-grid">
+                        <label>Common<input type="number" id="cfg-time-common"></label>
+                        <label>Rare<input type="number" id="cfg-time-rare"></label>
+                        <label>Epic<input type="number" id="cfg-time-epic"></label>
+                        <label>Legendary<input type="number" id="cfg-time-legendary"></label>
+                        <label>Mythic<input type="number" id="cfg-time-mythic"></label>
+                    </div>
+
+                    <h3 style="margin-top: 20px; margin-bottom: 8px; color: var(--primary-color);">Multiplier Kecepatan Jawab</h3>
+                    <div class="config-grid">
+                        <label>Cepat (nilai 100%)<input type="number" id="cfg-speed-fast" step="0.01" min="0" max="1"></label>
+                        <label>Sedang (nilai 70%)<input type="number" id="cfg-speed-medium" step="0.01" min="0" max="1"></label>
+                    </div>
+                    <p style="font-size: 0.8rem; opacity: 0.6; margin-top: 6px;">Angka 0–1 = persentase sisa waktu. Contoh: 0.833 berarti harus menjawab saat masih ≥83% waktu tersisa untuk dapat nilai penuh.</p>
+
+                    <h3 style="margin-top: 20px; margin-bottom: 8px; color: var(--primary-color);">Multiplier Timeout (per soal)</h3>
+                    <div class="config-grid">
+                        <label>Belum pernah timeout<input type="number" id="cfg-timeout-0" step="0.01"></label>
+                        <label>1x timeout<input type="number" id="cfg-timeout-1" step="0.01"></label>
+                        <label>2x timeout<input type="number" id="cfg-timeout-2" step="0.01"></label>
+                    </div>
+                    <p style="font-size: 0.8rem; opacity: 0.6; margin-top: 6px;">3x timeout pada soal yang sama selalu 0 poin & tanpa loot (tidak bisa diubah).</p>
+
+                    <h3 style="margin-top: 20px; margin-bottom: 8px; color: var(--primary-color);">Lain-lain</h3>
+                    <div class="config-grid">
+                        <label>Penalti Bomb<input type="number" id="cfg-bomb-penalty"></label>
+                    </div>
+
+                    <button id="save-config-btn" class="btn-primary" style="width: auto; margin-top: 20px; padding: 12px 24px;">💾 Simpan Aturan</button>
+                    <p id="config-save-status" style="margin-top: 10px; font-size: 0.9rem; font-weight: bold;"></p>
                 </div>
             </div>
         </main>
