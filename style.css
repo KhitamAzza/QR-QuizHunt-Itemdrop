@@ -1,0 +1,675 @@
+/* ==========================================
+   TORCHLIT DUNGEON THEME
+   Display/UI font: Cinzel (carved-stone engraving)
+   Body/parchment font: IM Fell English (old-book ink)
+   ========================================== */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;900&family=IM+Fell+English:ital@0;1&display=swap');
+
+:root {
+    --primary-color: #c9922e;      /* torchlight gold */
+    --primary-deep: #8f651f;       /* torchlight gold, pressed edge */
+    --secondary-color: #4f7d6c;    /* verdigris copper-green */
+    --secondary-deep: #2f4f43;
+    --danger-color: #9c2b23;       /* ember red */
+    --danger-deep: #5e1b16;
+    --bg-color: #100c08;           /* unlit stone void */
+    --text-color: #e7d9b8;         /* parchment light */
+    --card-bg: #1e1811;            /* stone slab panel */
+    --card-border: #3a2f21;        /* raised stone edge */
+    --ink-color: #2a2015;          /* dark ink, for text on light parchment */
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'IM Fell English', Georgia, 'Times New Roman', serif; }
+
+body {
+    background-color: var(--bg-color);
+    /* Procedural stone-wall + torchlight vignette — no image asset required.
+       To swap in a real texture photo instead, add:
+       background-image: url('assets/dungeon-bg.jpg'), <the gradients below>;
+       and set background-size: cover on the image layer. */
+    background-image:
+        radial-gradient(ellipse 700px 500px at 12% 8%, rgba(201,146,46,0.14), transparent 55%),
+        radial-gradient(ellipse 700px 500px at 88% 92%, rgba(156,43,35,0.10), transparent 55%),
+        repeating-linear-gradient(0deg, rgba(0,0,0,0.4) 0px, rgba(0,0,0,0.4) 2px, transparent 2px, transparent 68px),
+        repeating-linear-gradient(90deg, rgba(0,0,0,0.4) 0px, rgba(0,0,0,0.4) 2px, transparent 2px, transparent 100px);
+    background-attachment: fixed;
+    color: var(--text-color);
+    min-height: 100vh;
+}
+
+h1, h2, h3, h4,
+.btn-primary, .btn-logout, .option-btn,
+.tab-btn, .timer-badge, .rarity-badge, .parchment-rarity-badge,
+.locked-content h2, .finish-content h1, .bomb-message h2,
+#announcement-history-toggle, .stat-box h3, #leaderboard-table th {
+    font-family: 'Cinzel', 'Times New Roman', serif;
+    letter-spacing: 0.5px;
+}
+
+.screen { display: none; }
+.screen.active { display: block; }
+
+.btn-primary, .btn-logout, .option-btn {
+    padding: 12px 24px; border: 2px solid transparent; border-radius: 4px; font-size: 16px; font-weight: 700;
+    cursor: pointer; transition: transform 0.1s, opacity 0.2s, border-color 0.2s; width: 100%; margin-top: 10px;
+}
+.btn-primary {
+    background: linear-gradient(180deg, #d9a742, var(--primary-color));
+    color: #241a0c; border-color: var(--primary-deep);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.4), 0 0 14px rgba(201,146,46,0.25);
+}
+.btn-logout {
+    background: linear-gradient(180deg, #b8362b, var(--danger-color));
+    color: #f5e6d3; border-color: var(--danger-deep);
+    width: auto; padding: 8px 16px;
+}
+button:active { transform: scale(0.98); opacity: 0.9; }
+
+/* Login */
+.login-container {
+    max-width: 400px; margin: 100px auto; padding: 30px;
+    background: var(--card-bg); border: 2px solid var(--card-border); border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6), inset 0 0 40px rgba(201,146,46,0.05);
+    text-align: center;
+}
+.login-container h1 { margin-bottom: 10px; color: var(--primary-color); text-shadow: 2px 2px 0 #000; font-size: 1.8rem; }
+.login-container p { margin-bottom: 20px; color: var(--text-color); opacity: 0.75; font-style: italic; }
+.login-container input {
+    width: 100%; padding: 12px; font-size: 16px; background: #14100b; color: var(--text-color);
+    border: 2px solid var(--card-border); border-radius: 4px; margin-bottom: 10px;
+}
+.login-container input::placeholder { color: #8a7a5c; }
+
+/* Student Dashboard */
+.student-header {
+    display: flex; justify-content: space-between; align-items: center; padding: 15px 20px;
+    background: var(--card-bg); border-bottom: 2px solid var(--card-border);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5); flex-wrap: wrap; gap: 10px;
+}
+.user-info h2 { font-size: 1.2rem; color: var(--primary-color); }
+.user-info p { font-size: 0.9rem; color: var(--text-color); opacity: 0.7; }
+
+.timer-badge {
+    background: linear-gradient(180deg, #5f9482, var(--secondary-color));
+    color: #f3ede0; padding: 8px 16px; border-radius: 4px; border: 2px solid var(--secondary-deep);
+    font-weight: bold; font-size: 1.1rem; box-shadow: 0 2px 0 rgba(0,0,0,0.4);
+}
+
+.student-main { padding: 20px; max-width: 600px; margin: 0 auto; }
+.scanner-container {
+    background: var(--card-bg); padding: 20px; border: 2px solid var(--card-border); border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.5); text-align: center;
+}
+.scanner-container h3 { color: var(--primary-color); margin-bottom: 10px; }
+#reader { width: 100%; max-width: 400px; margin: 20px auto; border: 2px dashed var(--card-border); border-radius: 4px; overflow: hidden; }
+
+.manual-entry { margin-top: 20px; border-top: 1px solid var(--card-border); padding-top: 20px; }
+.manual-entry p { opacity: 0.7; margin-bottom: 8px; }
+.manual-entry input {
+    width: 70%; padding: 10px; font-size: 16px; background: #14100b; color: var(--text-color);
+    border: 2px solid var(--card-border); border-radius: 4px; margin-right: 10px;
+}
+.manual-entry button { width: auto; margin-top: 0; display: inline-block; }
+
+/* Question Modal (legacy fallback screen) */
+.question-modal {
+    background: var(--card-bg); padding: 25px; border: 2px solid var(--card-border); border-radius: 6px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6); text-align: center; animation: slideUp 0.3s ease-out;
+}
+.question-modal h3 { font-size: 1.3rem; margin-bottom: 20px; color: var(--text-color); }
+.options-grid { display: flex; flex-direction: column; gap: 10px; }
+.option-btn {
+    background: var(--secondary-color); color: #f3ede0; text-align: left; padding: 15px;
+    border-radius: 4px; border: 2px solid var(--secondary-deep); transition: all 0.2s;
+}
+.option-btn:hover { background: #63a08c; border-color: var(--primary-color); }
+
+/* Feedback */
+.feedback {
+    margin-top: 20px; padding: 20px; background: linear-gradient(180deg, #5f9482, var(--secondary-color));
+    color: #f3ede0; border: 2px solid var(--secondary-deep); border-radius: 6px; text-align: center;
+    font-size: 1.2rem; font-weight: bold; animation: fadeIn 0.3s ease-in-out;
+}
+.hidden { display: none !important; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Game Over Overlay */
+.game-over-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(6,4,2,0.95); color: var(--text-color);
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center; z-index: 9999;
+}
+.game-over-overlay h1 { font-size: 3rem; margin-bottom: 20px; color: var(--danger-color); text-shadow: 3px 3px 0 #000; }
+.game-over-overlay p { font-size: 1.2rem; margin-bottom: 30px; max-width: 400px; }
+
+/* Teacher Dashboard */
+.teacher-header {
+    display: flex; justify-content: space-between; align-items: center; padding: 20px 40px;
+    background: #0c0a07; color: var(--primary-color); border-bottom: 3px solid var(--card-border);
+}
+.teacher-main { padding: 40px; max-width: 1200px; margin: 0 auto; }
+
+.control-panel, .leaderboard-panel {
+    background: var(--card-bg); padding: 25px; border: 2px solid var(--card-border); border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.5); margin-bottom: 30px;
+}
+.control-panel h2, .leaderboard-panel h2 {
+    margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; color: var(--primary-color);
+}
+.control-row { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+.control-row input {
+    padding: 10px; background: #14100b; color: var(--text-color);
+    border: 2px solid var(--card-border); border-radius: 4px; width: 100px; font-size: 16px;
+}
+
+.table-container { overflow-x: auto; }
+#leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+#leaderboard-table th, #leaderboard-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--card-border); }
+#leaderboard-table th { background: #14100b; font-weight: bold; color: var(--primary-color); }
+#leaderboard-table tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+#leaderboard-table tr:first-child td { font-weight: bold; color: var(--primary-color); }
+
+@media (max-width: 600px) {
+    .login-container { 
+        margin: 50px auto; /* 'auto' is the magic word that keeps it perfectly centered! */
+        padding: 30px 20px; /* Adds a little breathing room on the left/right edges */
+        width: 90%; /* Ensures it doesn't touch the very edges of the phone */
+    }
+    
+    .manual-entry input { width: 100%; margin-bottom: 10px; margin-right: 0; }
+    .manual-entry button { width: 100%; }
+    .control-row { flex-direction: column; align-items: stretch; }
+    .control-row input, .control-row button { width: 100%; margin-top: 10px; }
+    .student-header { justify-content: center; text-align: center; }
+}
+
+/* ==========================================
+   RARITY SYSTEM — LOOT GEM TONES
+   ========================================== */
+.rarity-badge {
+    display: inline-block; padding: 4px 12px; border-radius: 4px; color: #fff;
+    font-size: 0.75rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+}
+
+/* Common — iron */
+.rarity-common .question-modal { border: 3px solid #8a8378; }
+.rarity-common .rarity-badge { background: #8a8378; }
+
+/* Rare — emerald */
+.rarity-rare .question-modal { border: 3px solid #3f8f63; }
+.rarity-rare .rarity-badge { background: #3f8f63; }
+.rarity-rare .option-btn { background: #2f6b49; }
+
+/* Epic — amethyst */
+.rarity-epic .question-modal { border: 3px solid #8a4fd1; box-shadow: 0 0 10px rgba(138,79,209,0.35); }
+.rarity-epic .rarity-badge { background: #8a4fd1; }
+.rarity-epic .option-btn { background: #6b39a8; }
+
+/* Legendary — gold */
+.rarity-legendary .question-modal { border: 3px solid var(--primary-color); box-shadow: 0 0 20px rgba(201,146,46,0.5); }
+.rarity-legendary .rarity-badge { background: var(--primary-color); }
+.rarity-legendary .option-btn { background: var(--primary-deep); }
+
+/* Mythic — ruby */
+.rarity-mythic .question-modal { border: 3px solid var(--danger-color); box-shadow: 0 0 25px rgba(156,43,35,0.6); }
+.rarity-mythic .rarity-badge { background: var(--danger-color); animation: pulse-badge 1.5s infinite; }
+.rarity-mythic .option-btn { background: #6e1a15; }
+
+@keyframes pulse-badge {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); box-shadow: 0 0 10px rgba(156,43,35,0.8); }
+    100% { transform: scale(1); }
+}
+
+/* ==========================================
+   TENSION TIMER
+   ========================================== */
+.question-timer-container {
+    position: relative; width: 100%; height: 24px; background: #14100b;
+    border: 2px solid var(--card-border); border-radius: 4px; margin-bottom: 20px; overflow: hidden;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.6);
+}
+.question-timer-bar { height: 100%; width: 100%; background: var(--secondary-color); transition: width 0.1s linear, background-color 0.5s; }
+.question-timer-text {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-weight: 900; font-size: 1rem; color: #f3ede0;
+    text-shadow: 0 0 4px rgba(0,0,0,0.9); font-family: monospace; /* HUD-style digits */
+}
+
+/* ==========================================
+   STUDENT PROGRESS TRACKER
+   ========================================== */
+.progress-tracker {
+    background: var(--card-bg); padding: 12px 20px; border-bottom: 2px solid var(--card-border);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.4); display: flex; flex-direction: column; gap: 8px;
+}
+.progress-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; font-weight: bold; color: var(--text-color); }
+.progress-bar-container {
+    width: 100%; height: 16px; background: #14100b; border: 1px solid var(--card-border);
+    border-radius: 4px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+}
+.progress-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #3f8f63, #5fb884); border-radius: 4px; transition: width 0.5s ease-out; }
+.progress-rarity-breakdown { display: flex; gap: 10px; flex-wrap: wrap; font-size: 0.75rem; font-weight: bold; }
+.rarity-dot { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; color: #fff; }
+.rarity-dot.common { background: #8a8378; }
+.rarity-dot.rare { background: #3f8f63; }
+.rarity-dot.epic { background: #8a4fd1; }
+.rarity-dot.legendary { background: var(--primary-color); }
+.rarity-dot.mythic { background: var(--danger-color); }
+
+.progress-complete .progress-bar-fill { background: linear-gradient(90deg, var(--primary-color), #e8c374); animation: pulse-bar 1s infinite; }
+@keyframes pulse-bar { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+
+/* ==========================================
+   TEACHER TABS
+   ========================================== */
+.teacher-tabs { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 2px solid var(--card-border); overflow-x: auto; }
+.tab-btn {
+    padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent;
+    font-size: 1rem; font-weight: bold; color: var(--text-color); opacity: 0.6;
+    cursor: pointer; transition: all 0.2s; width: auto; margin-top: 0; white-space: nowrap;
+}
+.tab-btn:hover { opacity: 1; color: var(--primary-color); background: rgba(201,146,46,0.06); }
+.tab-btn.active-tab { opacity: 1; color: var(--primary-color); border-bottom: 3px solid var(--primary-color); }
+.tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
+.tab-content.active-tab-content { display: block; }
+
+/* ==========================================
+   CHEST → SCROLL → PARCHMENT SEQUENCE
+   ========================================== */
+.chest-overlay, .parchment-overlay, .scroll-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(6,4,2,0.9); display: flex; justify-content: center; align-items: center;
+    z-index: 9998; animation: fadeIn 0.3s ease-in;
+}
+
+.chest-container { position: relative; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.chest-sprite { width: 250px; height: auto; image-rendering: pixelated; z-index: 2; cursor: pointer; transition: transform 0.2s ease; }
+.chest-sprite:hover { transform: scale(1.05); }
+
+.chest-glow-effect { animation: retro-pulse 1s infinite alternate; }
+@keyframes retro-pulse {
+    0% { filter: drop-shadow(0 0 5px rgba(201,146,46,0.5)) brightness(1); }
+    100% { filter: drop-shadow(0 0 25px rgba(201,146,46,1)) brightness(1.3); }
+}
+.chest-shake-css { animation: retro-shake 0.1s infinite; }
+@keyframes retro-shake {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    25% { transform: translate(-4px, 2px) rotate(-2deg); }
+    50% { transform: translate(4px, -2px) rotate(2deg); }
+    75% { transform: translate(-2px, -4px) rotate(-1deg); }
+    100% { transform: translate(2px, 4px) rotate(1deg); }
+}
+/* ==========================================
+   CHEST IMMERSION FIXES
+   ========================================== */
+
+/* 1. Suspense Text Styling */
+.chest-suspense-text {
+    color: #fff;
+    font-size: 1.3rem;
+    font-family: 'Cinzel', serif; /* Matches your retro theme */
+    text-align: center;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 0 #000;
+    min-height: 1.6em; /* PREVENTS THE CHEST FROM JUMPING! */
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.chest-suspense-text.visible {
+    opacity: 1;
+}
+
+/* 2. Black & White "Back" Button */
+#chest-back-btn {
+    background-color: #000 !important;
+    color: #fff !important;
+    border: 2px solid #fff !important;
+    border-radius: 4px;
+    padding: 10px 20px;
+    margin-top: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    font-family: 'Cinzel', serif;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+#chest-back-btn:hover {
+    background-color: #222 !important;
+    transform: translateY(-2px);
+}
+
+/* 3. Ensure Instruction doesn't cause jumps either */
+/* ==========================================
+   FIX: CHEST INSTRUCTION POSITIONING
+   ========================================== */
+.chest-container .retro-instruction {
+    position: relative; /* Changes from absolute to normal flow */
+    bottom: auto;
+    left: auto;
+    transform: none;    /* Removes the old centering hacks */
+    margin-top: 20px;   /* Adds breathing room below the chest */
+}
+.folded-scroll-sprite { width: 300px; height: auto; image-rendering: pixelated; cursor: pointer; animation: floatScroll 2s ease-in-out infinite; }
+@keyframes floatScroll { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+
+.parchment-bg { width: 100%; max-width: 530px; height: 700px; image-rendering: pixelated; animation: unrollScroll 0.4s ease-out; }
+@keyframes unrollScroll { 0% { transform: scaleY(0); opacity: 0; } 100% { transform: scaleY(1); opacity: 1; } }
+
+
+@keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+.screen-flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 9999; pointer-events: none; }
+#screen-flash.flash-active { animation: quick-flash 0.3s ease-out forwards; }
+@keyframes quick-flash { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+.locked-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(6,4,2,0.95); display: flex; justify-content: center; align-items: center; z-index: 9999;
+}
+.locked-content {
+    text-align: center; color: var(--text-color); padding: 30px; border: 4px solid var(--danger-color);
+    border-radius: 6px; background: rgba(40,10,8,0.85); max-width: 80%;
+}
+.locked-content h2 { color: var(--danger-color); font-size: 2rem; margin-bottom: 15px; }
+.locked-content p { font-size: 1.2rem; margin-bottom: 20px; }
+
+/* Parchment content — ink on aged paper */
+.parchment-content {
+    position: absolute; top: 12%; left: 10%; width: 80%; height: 76%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 10px; box-sizing: border-box; animation: fadeInContent 0.5s ease-out;
+}
+@keyframes fadeInContent { 0% { opacity: 0; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
+
+.parchment-content .option-btn {
+    background: rgba(255,255,255,0.55); color: var(--ink-color); border: 2px solid var(--ink-color);
+    border-radius: 3px; font-family: 'IM Fell English', Georgia, serif; font-weight: bold; font-size: 1.05rem;
+    margin-top: 6px; width: 90%; text-align: left; padding: 8px 12px;
+}
+.parchment-content .option-btn:hover { background: var(--ink-color); color: #ead9ad; }
+.parchment-content h3 {
+    color: var(--ink-color); font-size: 0.9rem; margin: 10px 0; line-height: 1.35;
+    font-family: 'IM Fell English', Georgia, serif; text-align: center; font-weight: bold;
+}
+.parchment-rarity-badge {
+    display: inline-block; padding: 6px 16px; background: var(--danger-color); color: #fff;
+    font-weight: bold; font-size: 0.9rem; border: 3px solid var(--ink-color);
+    text-transform: uppercase; margin-bottom: 15px; letter-spacing: 2px;
+}
+.parchment-timer-container { position: relative; width: 80%; height: 14px; background: #d8c496; border: 2px solid var(--ink-color); margin-bottom: 10px; }
+.parchment-timer-bar { height: 100%; width: 100%; background: var(--secondary-color); transition: width 0.1s linear; }
+.parchment-timer-text {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    color: var(--ink-color); font-weight: 900; font-size: 0.7rem; font-family: monospace;
+}
+.parchment-content h3.time-up-text {
+    font-size: 1.5rem; color: var(--danger-color) !important; text-shadow: 2px 2px 0 #000;
+    margin-top: 30px; margin-bottom: 30px; letter-spacing: 2px;
+}
+
+/* ==========================================
+   BOMB TRAP
+   ========================================== */
+.bomb-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(6,4,2,0.97); display: flex; justify-content: center; align-items: center; z-index: 10000;
+}
+.bomb-container { position: relative; display: flex; justify-content: center; align-items: center; }
+.bomb-sprite { width: 300px; height: 300px; image-rendering: pixelated; z-index: 2; }
+.bomb-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ff0000; z-index: 3; opacity: 0; }
+.bomb-flash.flash-active { animation: redFlash 0.6s ease-out forwards; }
+@keyframes redFlash { 0% { opacity: 0.9; } 100% { opacity: 0; } }
+
+.screen-shake { animation: screenShake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+@keyframes screenShake {
+    10%, 90% { transform: translate3d(-2px, 0, 0); }
+    20%, 80% { transform: translate3d(4px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
+    40%, 60% { transform: translate3d(8px, 0, 0); }
+}
+
+.bomb-message {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(6,4,2,0.92); border: 4px solid var(--danger-color); padding: 20px 40px;
+    border-radius: 6px; text-align: center; color: var(--text-color); z-index: 4;
+    box-shadow: 0 0 30px rgba(156,43,35,0.5); animation: popInMessage 0.3s ease-out;
+}
+@keyframes popInMessage { 0% { transform: translate(-50%, -50%) scale(0.5); } 100% { transform: translate(-50%, -50%) scale(1); } }
+.bomb-message h2 { color: var(--danger-color); font-size: 2rem; margin: 0 0 10px 0; text-shadow: 2px 2px 0 #000; }
+.bomb-message p { font-size: 1.5rem; margin: 0; font-weight: bold; text-shadow: 1px 1px 0 #000; }
+
+/* ==========================================
+   ANNOUNCEMENT TICKER & HISTORY DROPDOWN
+   ========================================== */
+.announcement-ticker {
+    position: relative; background: linear-gradient(180deg, #2b2115, #1c1611); color: var(--primary-color);
+    padding: 10px 20px; font-weight: bold; display: flex; align-items: center; gap: 10px;
+    border-bottom: 3px solid var(--primary-color); animation: slideDown 0.3s ease-out;
+}
+.ticker-icon { font-size: 1.2rem; }
+@keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+
+#announcement-history-toggle {
+    margin-left: auto; font-size: 0.75rem; background: transparent; border: 1px solid var(--primary-color);
+    color: var(--primary-color); border-radius: 4px; padding: 4px 10px; cursor: pointer; width: auto; margin-top: 0;
+}
+#announcement-history-toggle:hover { background: rgba(201,146,46,0.12); }
+#announcement-history-dropdown {
+    position: absolute; top: 100%; right: 20px; margin-top: 6px; width: 280px; max-height: 260px;
+    overflow-y: auto; background: var(--card-bg); border: 2px solid var(--card-border);
+    border-radius: 6px; box-shadow: 0 10px 24px rgba(0,0,0,0.6); z-index: 50;
+}
+.announcement-history-item {
+    padding: 8px 12px; border-bottom: 1px solid var(--card-border); font-size: 0.85rem;
+    display: flex; gap: 8px; color: var(--text-color);
+}
+.announcement-history-item:last-child { border-bottom: none; }
+.announcement-history-time { flex-shrink: 0; font-weight: bold; color: var(--primary-color); font-family: monospace; }
+
+/* ==========================================
+   FINISH OVERLAY
+   ========================================== */
+.finish-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(6,4,2,0.96); display: flex; justify-content: center; align-items: center; z-index: 10000;
+}
+.finish-content {
+    background: var(--card-bg); padding: 40px; border-radius: 8px; text-align: center;
+    max-width: 90%; width: 400px; box-shadow: 0 0 50px rgba(201,146,46,0.4); border: 4px solid var(--primary-color);
+}
+.finish-content h1 { color: var(--primary-color); text-shadow: 2px 2px 0 #000; font-size: 2rem; margin-bottom: 10px; }
+.finish-content p { color: var(--text-color); font-size: 1.1rem; margin-bottom: 20px; opacity: 0.85; }
+.stats-grid { 
+    display: flex; 
+    justify-content: space-between; /* Changed from space-around */
+    gap: 8px; /* Reduced gap */
+    margin-bottom: 20px; 
+    flex-wrap: nowrap; /* Prevent wrapping */
+}
+.stat-box { 
+    background: #14100b; 
+    padding: 12px 8px; /* Reduced padding */
+    border-radius: 6px; 
+    flex: 1; /* Equal width for all boxes */
+    border: 2px solid var(--card-border);
+    text-align: center;
+    min-width: 0; /* Allow shrinking */
+}
+
+.stat-box h3 { 
+    font-size: 0.7rem; /* Smaller heading */
+    color: var(--text-color); 
+    opacity: 0.7; 
+    margin-bottom: 5px; 
+    text-transform: uppercase; 
+}
+
+.stat-box p { 
+    font-size: 1.2rem; /* Slightly smaller text */
+    font-weight: bold; 
+    color: var(--primary-color); 
+    margin: 0; 
+}
+#finish-rank {
+    font-size: 1.1rem !important;
+    line-height: 1.2;
+}
+/* ==========================================
+   FIX: SCROLL & PARCHMENT INSTRUCTION POSITION
+   ========================================== */
+
+/* 1. Force the overlays to stack items vertically (Image on top, Text on bottom) */
+.scroll-overlay, .parchment-overlay {
+    display: flex;
+    flex-direction: column; 
+    align-items: center; /* Centers the items horizontally */
+    justify-content: center;
+}
+
+/* 2. Change the instruction from "floating" to "flowing" */
+.scroll-overlay .retro-instruction,
+.parchment-overlay .retro-instruction {
+    position: relative; /* Takes it out of absolute positioning */
+    bottom: auto;
+    left: auto;
+    transform: none;    /* Removes the old centering hacks */
+    margin-top: 20px;   /* Adds breathing room below the image */
+    text-align: center;
+    width: 100%;
+}
+/* ==========================================
+MOBILE OPTIMIZATION FOR PARCHMENT
+========================================== */
+@media (max-width: 600px) {
+    /* Reduce content area height to fit smaller screens */
+    .parchment-content {
+        top: 15%;
+        height: 70%;
+        padding: 5px;
+    }
+    
+    /* Make question text smaller on mobile */
+    .parchment-content h3 {
+        font-size: 1rem; /* Reduced from 1.2rem */
+        margin: 8px 0;
+        line-height: 1.2;
+    }
+    
+    /* Make buttons smaller on mobile */
+    .parchment-content .option-btn {
+        font-size: 0.95rem; /* Reduced from 1.2rem */
+        padding: 6px 10px;
+        margin-top: 4px;
+    }
+    
+    /* Make rarity badge smaller */
+    .parchment-rarity-badge {
+        font-size: 0.5rem; /* Reduced from 0.6rem */
+        padding: 2px 6px;
+        margin-bottom: 8px;
+    }
+    
+    /* Make timer text smaller */
+    .parchment-timer-text {
+        font-size: 0.6rem; /* Reduced from 0.7rem */
+    }
+}
+/* ==========================================
+SECRET CODE MODAL & HINT OVERLAY
+========================================== */
+.secret-code-modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center;
+    z-index: 10001;
+}
+.secret-code-content {
+    background: var(--card-bg); padding: 30px; border-radius: 12px;
+    text-align: center; max-width: 90%; width: 350px;
+    border: 3px solid var(--primary-color);
+    box-shadow: 0 0 30px rgba(0,0,0,0.5);
+}
+.secret-code-content h3 { color: var(--primary-color); margin-bottom: 10px; }
+.secret-code-content input {
+    width: 100%; padding: 12px; font-size: 16px; border: 2px solid #ddd;
+    border-radius: 8px; margin-bottom: 15px; text-align: center;
+}
+.secret-code-actions { display: flex; gap: 10px; justify-content: center; }
+.secret-code-actions button { width: auto; flex: 1; }
+
+/* Hint Overlay */
+.hint-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(6,4,2,0.9); display: flex; justify-content: center; align-items: center;
+    z-index: 10000;
+}
+.hint-content {
+    position: absolute; top: 15%; left: 10%; width: 80%; height: 70%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px; box-sizing: border-box; text-align: center;
+}
+.hint-content h2 {
+    color: var(--ink-color); font-size: 1.8rem; margin-bottom: 15px;
+    font-family: 'Cinzel', serif; text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
+}
+.hint-content p {
+    color: var(--ink-color); font-size: 1.2rem; line-height: 1.5;
+    font-family: 'IM Fell English', serif; font-weight: bold;
+    max-width: 90%; margin-bottom: 20px;
+}
+/* ==========================================
+LOOT & INVENTORY MODALS
+========================================== */
+.loot-modal, .inventory-modal, .item-detail-modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center;
+    z-index: 10001;
+}
+.item-detail-modal { z-index: 10002; } /* Sits on top of inventory */
+
+.loot-content, .inventory-content, .item-detail-content {
+    background: var(--card-bg); padding: 25px; border-radius: 12px;
+    border: 3px solid var(--primary-color); max-width: 90%; width: 350px;
+    text-align: center; box-shadow: 0 0 30px rgba(0,0,0,0.8);
+    color: var(--text-color);
+}
+.loot-content h2 { color: var(--primary-color); margin-bottom: 10px; font-size: 1.8rem; }
+.loot-icon { width: 128px; height: 128px; image-rendering: pixelated; margin: 10px 0; animation: popIn 0.5s ease-out; }
+@keyframes popIn { 0% { transform: scale(0) rotate(-180deg); } 100% { transform: scale(1) rotate(0); } }
+
+.loot-title { font-size: 1.4rem; margin: 10px 0 5px 0; color: var(--text-color); }
+.loot-desc { font-style: italic; opacity: 0.8; margin-bottom: 15px; font-size: 0.95rem; }
+.loot-stats { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
+.loot-tier-badge, .loot-points-badge { padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; }
+.loot-tier-badge { background: #333; color: #fff; }
+.loot-points-badge { background: var(--primary-color); color: #000; }
+
+/* Inventory Grid */
+.inventory-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.inventory-header h2 { margin: 0; color: var(--primary-color); font-size: 1.5rem; }
+.close-btn { background: none; border: none; color: var(--text-color); font-size: 1.5rem; cursor: pointer; }
+.inventory-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    max-height: 300px; overflow-y: auto; padding: 10px;
+    background: #14100b; border-radius: 8px;
+}
+.loot-slot {
+    background: #2a2015; border: 2px solid var(--card-border); border-radius: 6px;
+    padding: 10px; cursor: pointer; transition: transform 0.2s;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.loot-slot:hover { transform: scale(1.05); border-color: var(--primary-color); }
+.loot-slot img { width: 48px; height: 48px; image-rendering: pixelated; margin-bottom: 5px; }
+.loot-slot .loot-count { font-size: 0.8rem; font-weight: bold; color: var(--text-color); }
+
+/* Item Detail View */
+.detail-icon { width: 128px; height: 128px; image-rendering: pixelated; margin-bottom: 10px; }
+#detail-title { color: var(--primary-color); margin: 10px 0 5px 0; font-size: 1.4rem; }
+.detail-tier { font-weight: bold; background: #333; color: white; padding: 4px 12px; border-radius: 12px; display: inline-block; margin-bottom: 10px; }
+.detail-desc { font-style: italic; opacity: 0.8; margin-bottom: 10px; line-height: 1.4; }
+.detail-points { font-weight: bold; color: var(--primary-color); margin-bottom: 20px; }

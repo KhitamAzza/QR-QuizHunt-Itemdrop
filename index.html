@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Berburu harta Qrun</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- SCREEN 1: LOGIN -->
+    <div id="login-screen" class="screen active">
+        <div class="login-container">
+            <h1>Quiz Berburu harta Qrun</h1>
+            <p>Masukkan password untuk mulai</p>
+            <input type="password" id="password-input" placeholder="Masukkan password">
+            <button id="login-btn" class="btn-primary">Login</button>
+        </div>
+    </div>
+
+    <!-- SCREEN 2: STUDENT DASHBOARD -->
+    <div id="student-dashboard" class="screen">
+        <header class="student-header">
+            <div class="user-info">
+                <h2 id="display-name">Siswa</h2>
+                <p id="display-class">Kelas</p>
+            </div>
+            <div id="student-timer" class="timer-badge">⏳ --:--</div>
+            <button id="logout-btn" class="btn-logout">Logout</button>
+        </header>
+        
+        <!-- Announcement Ticker -->
+        <div id="announcement-ticker" class="announcement-ticker hidden">
+            <span class="ticker-icon"></span>
+            <span id="announcement-text">Loading info terbaru..</span>
+            <button id="announcement-history-toggle" type="button">📜</button>
+            <div id="announcement-history-dropdown" class="hidden"></div>
+        </div>
+
+        <!-- Progress Tracker -->
+        <div id="progress-tracker" class="progress-tracker"></div>
+        
+        <main class="student-main">
+            <!-- Scanner Area -->
+            <div class="scanner-container" id="scanner-area">
+                <h3>Scan QR Code</h3>
+                <div id="reader"></div>
+                
+                <div class="manual-entry hidden">
+                    <p>Masukkan kode sakti:</p>
+                    <input type="text" id="manual-qr-input" placeholder="e.g., Q001">
+                    <button id="manual-submit-btn" class="btn-primary">Enter</button>
+                </div>
+            </div>
+                <!-- Secret Code & Inventory Buttons -->
+    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 20px auto;">
+        <button id="secret-code-btn" class="btn-primary" style="width: auto; margin: 0; padding: 10px 20px;">
+            Masukkan kode sakti
+        </button>
+        <button id="open-inventory-btn" class="btn-primary" style="width: auto; margin: 0; padding: 10px 20px; background: var(--secondary-color);">
+            🎒 Loot
+        </button>
+    </div>
+
+    <!-- Secret Code Modal -->
+    <div id="secret-code-modal" class="secret-code-modal hidden">
+        <div class="secret-code-content">
+            <h3>Masukkan kode sakti</h3>
+            <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 15px;">Kode sakti bisa membuka harta tersembunyi.</p>
+            <input type="text" id="secret-code-input" placeholder="e.g., Q001">
+            <div class="secret-code-actions">
+                <button id="secret-code-submit" class="btn-primary" style="margin-top:0;">Buka</button>
+                <button id="secret-code-cancel" class="btn-logout" style="margin-top:0;">Batal</button>
+            </div>
+        </div>
+    </div>
+
+            <!-- Question Modal (Fallback only) -->
+            <div id="question-modal" class="question-modal hidden">
+                <h3 id="q-text">Pertanyaan disini</h3>
+                <div id="q-options" class="options-grid"></div>
+            </div>
+
+            <!-- Feedback Area -->
+            <div id="feedback-area" class="feedback hidden">
+                <p id="feedback-text">Jawaban disimpan</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- SCREEN 3: TEACHER DASHBOARD (TABBED) -->
+    <div id="teacher-dashboard" class="screen">
+        <header class="teacher-header">
+            <h1>🕹️ Control Panel</h1>
+            <button id="teacher-logout-btn" class="btn-logout">Logout</button>
+        </header>
+        
+        <main class="teacher-main">
+            <!-- Tab Navigation -->
+            <div class="teacher-tabs">
+                <button class="tab-btn active-tab" data-tab="tab-controls">🎮 Game Controls</button>
+                <button class="tab-btn" data-tab="tab-leaderboard">🏆 Leaderboard & Export</button>
+                <button class="tab-btn" data-tab="tab-data">⚙️ Manajemen data</button>
+            </div>
+
+            <!-- Tab 1: Game Controls -->
+            <div id="tab-controls" class="tab-content active-tab-content">
+                <div class="control-panel">
+                    <h2>⏱️ Game Timer & Status</h2>
+                    <div class="control-row">
+                        <label>Durasi (min):</label>
+                        <input type="number" id="game-duration" value="60" min="1">
+                        <button id="start-game-btn" class="btn-primary" style="width:auto; margin-top:0;">▶️ Start Game</button>
+                        <button id="stop-game-btn" class="btn-logout" style="width:auto; margin-top:0;">️ End Early</button>
+                    </div>
+                    <p id="game-status-text" style="margin-top: 15px; font-weight: bold; font-size: 1.1rem;">Status: Checking...</p>
+                </div>
+            </div>
+
+            <!-- Tab 2: Leaderboard & Export -->
+            <div id="tab-leaderboard" class="tab-content">
+                <div class="leaderboard-panel">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                        <h2 style="margin-bottom: 0;">Live Leaderboard</h2>
+                        <div style="display: flex; gap: 10px;">
+                            <button id="refresh-scores-btn" class="btn-primary" style="width:auto; margin-top:0; padding: 10px 20px;">🔄 Refresh</button>
+                            <button id="export-sheets-btn" class="btn-primary" style="width:auto; margin-top:0; padding: 10px 20px; background-color: #4f7d6c;">📊 Export to Sheets</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Nama</th>
+                                    <th>Kelas</th>
+                                    <th>Nilai total</th>
+                                    <th>Nilai akhir</th>
+                                    <th>Predikat</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-body">
+                                <tr><td colspan="6">Loading scores...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Data Management -->
+            <div id="tab-data" class="tab-content">
+                <div class="control-panel" style="border: 2px dashed var(--danger-color);">
+                    <h2 style="color: var(--danger-color);">⚠️ Danger Zone</h2>
+                    <p style="margin-bottom: 15px; color: #666;">Hati-hati, ini akan menghapus seluruh data di sesi ini.</p>
+                    <button id="purge-submissions-btn" class="btn-logout" style="background-color: #ff9800; width: auto; padding: 12px 24px;">🗑️ Clear All Answers</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- GAME OVER OVERLAY -->
+    <div id="game-over-overlay" class="game-over-overlay hidden">
+        <h1>🏁 Game Over!</h1>
+        <p>Waktu sudah habis.</p>
+        <button id="game-over-logout-btn" class="btn-logout" style="width:auto;">kembali ke Login</button>
+    </div>
+
+        <!-- CHEST OVERLAY -->
+    <div id="chest-overlay" class="chest-overlay hidden">
+        <div class="chest-container">
+            <!-- NEW: Suspense Text Area -->
+            <p id="chest-suspense-text" class="chest-suspense-text"></p>
+            
+            <img id="chest-sprite" src="assets/chest_closed.png" alt="Chest" class="chest-sprite">
+            <div id="chest-instruction" class="retro-instruction hidden">TAP untuk buka!</div>
+            <button id="chest-back-btn" class="chest-back-btn hidden">️ kembali ke Scanner</button>
+        </div>
+        <div id="screen-flash" class="screen-flash hidden"></div>
+    </div>
+
+    <!-- SCROLL OVERLAY -->
+    <div id="scroll-overlay" class="scroll-overlay hidden">
+        <img id="folded-scroll-sprite" src="assets/scroll_rolled.png" alt="Folded Scroll" class="folded-scroll-sprite">
+        <div id="scroll-instruction" class="retro-instruction">TAP untuk BUKA!</div>
+    </div>
+
+    <!-- PARCHMENT OVERLAY -->
+    <div id="parchment-overlay" class="parchment-overlay hidden">
+        <img src="assets/parchment_unrolled.png" alt="Parchment" class="parchment-bg">
+        <div id="parchment-instruction" class="retro-instruction hidden">TAP UNTUK BUKA!</div>
+        <div id="parchment-content" class="parchment-content hidden">
+            <div id="parchment-rarity-badge" class="parchment-rarity-badge">MYTHIC</div>
+            <h3 id="parchment-q-text">Pertanyaan disini</h3>
+            <div class="parchment-timer-container">
+                <div class="parchment-timer-bar"></div>
+                <span class="parchment-timer-text">10s</span>
+            </div>
+            <div class="options-grid" id="parchment-q-options"></div>
+        </div>
+    </div>
+
+    <!-- BOMB OVERLAY -->
+    <div id="bomb-overlay" class="bomb-overlay hidden">
+        <div class="bomb-container">
+            <img id="bomb-sprite" src="assets/bomb_1.png" alt="Bomb" class="bomb-sprite">
+        </div>
+        <div id="bomb-flash" class="bomb-flash hidden"></div>
+        <div id="bomb-message" class="bomb-message hidden">
+            <h2>Kamu kena BOMB!</h2>
+            <p>Score: -30 Points</p>
+        </div>
+    </div>
+
+    <!-- LOCKED CHEST OVERLAY -->
+    <div id="locked-overlay" class="locked-overlay hidden">
+        <div class="locked-content">
+            <h2>PETI KOSONG!</h2>
+            <p>Peti ini sudah dibuka oleh siswa lain.</p>
+            <button id="locked-back-btn" class="option-btn" style="background-color: #9c2b23; color: white; border: 2px solid white; margin-top: 20px;">Return to Scanner</button>
+        </div>
+    </div>
+        <!-- HINT CHEST OVERLAY -->
+    <div id="hint-overlay" class="hint-overlay hidden">
+        <img src="assets/parchment_unrolled.png" alt="Parchment" class="parchment-bg">
+        <div class="hint-content">
+            <h2>Gulungan sakti</h2>
+            <p id="hint-text">harap tunggu</p>
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <button id="hint-back-btn" class="option-btn" style="width: auto; padding: 10px 20px; margin-top: 15px;">Kembali ke scanner</button>
+                <button id="hint-logout-btn" class="btn-logout" style="width: auto; padding: 10px 20px; margin-top: 15px;">Kembali ke login</button>
+            </div>
+        </div>
+    </div>
+    <!-- LOOT REVEAL MODAL (Shows after correct answer) -->
+    <div id="loot-reveal-modal" class="loot-modal hidden">
+        <div class="loot-content">
+            <h2>🎁 LOOT DROP!</h2>
+            <img id="loot-icon" src="" alt="Item" class="loot-icon">
+            <h3 id="loot-title" class="loot-title">Item Name</h3>
+            <p id="loot-desc" class="loot-desc">Description goes here.</p>
+            <div class="loot-stats">
+                <span id="loot-tier" class="loot-tier-badge">Level 1</span>
+                <span id="loot-points" class="loot-points-badge">+0 Pts</span>
+            </div>
+            <button id="loot-keep-btn" class="btn-primary" style="margin-top: 15px;">Add to Inventory</button>
+        </div>
+    </div>
+
+    <!-- INVENTORY MODAL (Main View) -->
+    <div id="inventory-modal" class="inventory-modal hidden">
+        <div class="inventory-content">
+            <div class="inventory-header">
+                <h2>Harta saya</h2>
+                <p>Total Loot Value: <span id="inventory-total-value">0</span></p>
+                <button id="close-inventory-btn" class="close-btn">✕</button>
+            </div>
+            <div id="inventory-grid" class="inventory-grid">
+                <!-- Items injected by JS -->
+            </div>
+            <button id="inventory-back-scanner" class="btn-primary" style="margin-top: 15px;">Back to Scanner</button>
+        </div>
+    </div>
+
+    <!-- ITEM DETAIL MODAL (Pop-up View) -->
+    <div id="item-detail-modal" class="item-detail-modal hidden">
+        <div class="item-detail-content">
+            <img id="detail-icon" src="" alt="Item" class="detail-icon">
+            <h3 id="detail-title">Item Name</h3>
+            <p id="detail-tier" class="detail-tier">Level 1</p>
+            <p id="detail-desc" class="detail-desc">Description goes here.</p>
+            <p id="detail-points" class="detail-points">Value: 0</p>
+            <button id="close-detail-btn" class="btn-primary">Close</button>
+        </div>
+    </div>
+    <div id="finish-overlay" class="finish-overlay hidden">
+    <div class="finish-content">
+        <h1>Quiz Selesai!</h1>
+        <p>Kamu sudah menemukan semua harta!</p>
+            <div class="stats-grid">
+            <div class="stat-box">
+                <h3>Score akhir</h3>
+                <p id="finish-score">0</p>
+            </div>
+            <div class="stat-box">
+                <h3>Akurasi</h3>
+                <p id="finish-accuracy">0%</p>
+            </div>
+            <div class="stat-box">
+                <h3>Soal</h3>
+                <p id="finish-questions">0/0</p>
+            </div>
+            <!-- Arcade Rank MUST be inside stats-grid -->
+            <div class="stat-box">
+                <h3>Rank</h3>
+                <p id="finish-rank" style="font-size: 1.3rem;">F-Rank</p>
+            </div>
+        </div>
+
+        <button id="finish-logout-btn" class="btn-logout" style="margin-top: 20px; width: auto; padding: 12px 24px;">Return to Login</button>
+    </div>
+</div>
+
+
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="core.js"></script>
+    <script src="student.js"></script>
+    <script src="teacher.js"></script>
+</body>
+</html>
