@@ -18,7 +18,6 @@ let isGameActive = false;
 let GAME_CONFIG = {
     rarityPoints:       { common: 10, rare: 25, epic: 50, legendary: 100, mythic: 250 },
     timeLimits:         { common: 30000, rare: 20000, epic: 15000, legendary: 10000, mythic: 5000 }, // ms
-    rarityToTier:       { common: 1, rare: 1, epic: 2, legendary: 2, mythic: 3 }, // which loot tier a rarity can drop
     speedThresholds:    { fast: 0.833, medium: 0.333 }, // fraction of timeLimit remaining, for score/loot multiplier
     timeoutMultipliers: { 0: 1.0, 1: 0.7, 2: 0.5 },     // 3+ timeouts on one question always = 0, not configurable
     bombPenalty: 30
@@ -42,7 +41,6 @@ async function fetchGameConfig() {
             GAME_CONFIG = {
                 rarityPoints: { ...GAME_CONFIG.rarityPoints, ...(remote.rarityPoints || {}) },
                 timeLimits: { ...GAME_CONFIG.timeLimits, ...(remote.timeLimits || {}) },
-                rarityToTier: { ...GAME_CONFIG.rarityToTier, ...(remote.rarityToTier || {}) },
                 speedThresholds: { ...GAME_CONFIG.speedThresholds, ...(remote.speedThresholds || {}) },
                 timeoutMultipliers: { ...GAME_CONFIG.timeoutMultipliers, ...(remote.timeoutMultipliers || {}) },
                 bombPenalty: (typeof remote.bombPenalty === 'number') ? remote.bombPenalty : GAME_CONFIG.bombPenalty
@@ -223,20 +221,24 @@ loginBtn.addEventListener('click', async () => {
             const isFinished = resolvedChests >= currentUser.totalQuestions && currentUser.totalQuestions > 0;
 
             // 5. Route to correct screen
-            // Load the Loot Table from your local folder
-         if (!window.lootTable) {
-             fetch('loot_table.json')
-                 .then(res => res.json())
-                 .then(data => window.lootTable = data)
-                 .catch(err => console.error("Failed to load loot_table.json", err));
-         }
-                  // Load the Loot Table from your local folder
-         if (!window.lootTable) {
-             fetch('loot_table.json')
-                 .then(res => res.json())
-                 .then(data => window.lootTable = data)
-                 .catch(err => console.error("Failed to load loot_table.json", err));
-         }
+            // Load the Loot Table from your local folder. window.lootTable is
+            // the raw { rarity: [ {item_id, minPercent, ...}, ... ] } shape
+            // used to pick a drop; window.lootItemsById is a flattened
+            // item_id -> item lookup, used for inventory display.
+            if (!window.lootTable) {
+                fetch('loot_table.json')
+                    .then(res => res.json())
+                    .then(data => {
+                        window.lootTable = data;
+                        window.lootItemsById = {};
+                        Object.entries(data).forEach(([rarity, drops]) => {
+                            drops.forEach(drop => {
+                                window.lootItemsById[drop.item_id] = { ...drop, rarity };
+                            });
+                        });
+                    })
+                    .catch(err => console.error("Failed to load loot_table.json", err));
+            }
             displayName.textContent = currentUser.name;
             displayClass.textContent = currentUser.class;
             
@@ -313,7 +315,6 @@ gameOverLogoutBtn.addEventListener('click', handleLogout);
 //   "config": {
 //     "rarityPoints":       { "common": 10, "rare": 25, "epic": 50, "legendary": 100, "mythic": 250 },
 //     "timeLimits":         { "common": 30000, "rare": 20000, "epic": 15000, "legendary": 10000, "mythic": 5000 },
-//     "rarityToTier":       { "common": 1, "rare": 1, "epic": 2, "legendary": 2, "mythic": 3 },
 //     "speedThresholds":    { "fast": 0.833, "medium": 0.333 },
 //     "timeoutMultipliers": { "0": 1.0, "1": 0.7, "2": 0.5 },
 //     "bombPenalty": 30

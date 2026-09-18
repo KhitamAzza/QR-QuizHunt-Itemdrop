@@ -1,98 +1,28 @@
 {
-  "sandalswallow": { 
-    "name": "Sandal Suwaloow", 
-    "description": "Pasangan hilang entah kemana", 
-    "tier": 1, 
-    "base_points": 10 
-  },
-  "snek": { 
-    "name": "Snek populer", 
-    "description": "Jadi rebutan di koperasi", 
-    "tier": 1, 
-    "base_points": 10 
-  },
-  "es teh manis": { 
-    "name": "Sweet Es teh", 
-    "description": "Menyegarkan jiwa yang bersedih", 
-    "tier": 1, 
-    "base_points": 10 
-  },
-  "Parfum": { 
-    "name": "Parfum mahal", 
-    "description": "Membuatmu wangi dan disukai banyak orang", 
-    "tier": 1, 
-    "base_points": 10 
-  },
-  "Dasi": { 
-    "name": "Dasi kebanggaan", 
-    "description": "jika tidak ada tatib bertindak.", 
-    "tier": 1, 
-    "base_points": 10 
-  },
-  "Kunci": { 
-    "name": "Kunci emas", 
-    "description": "bisa membuka pintu disekitar sini", 
-    "tier": 1, 
-    "base_points": 10 
-  },
-  "router": { 
-    "name": "Router Fb LING", 
-    "description": "Sipaling dicari kaum mendang-mending.", 
-    "tier": 2, 
-    "base_points": 25 
-  },
-  "chargerhp": { 
-    "name": "Charger HP langka", 
-    "description": "Teman setia yang dipake rebutan genZ.", 
-    "tier": 2, 
-    "base_points": 25 
-  },
-  "MicpenaikIHSG": { 
-    "name": "Mic pengguncang negara", 
-    "description": "sekali bicara kiamat maju 1 hari", 
-    "tier": 2, 
-    "base_points": 25 
-  },
-  "kopyah": { 
-    "name": "Songkok Pak Rahmad", 
-    "description": "Songkok misterius pak rahmad yang tahan banting.", 
-    "tier": 2, 
-    "base_points": 25 
-  },
-  "HPkuat": { 
-    "name": "HP Nokia 3310", 
-    "description": "Konon katanya tidak bisa dihancurkan oleh tangan manusia biasa.", 
-    "tier": 2, 
-    "base_points": 25 
-  },
-  "Kamerabunabila": { 
-    "name": "Kamera bu Nabila", 
-    "description": "Lebih tajam dari mata elang, bisa melihat masa depan.", 
-    "tier": 2, 
-    "base_points": 25 
-  },
-   "Malapangankerja": { 
-    "name": "Map yang dijanjikan", 
-    "description": "bisa digunakan mencari 19 juta lapangan pekerjaan.", 
-    "tier": 2, 
-    "base_points": 25 
-  },
-  "taspaknul": { 
-    "name": "Tas pak nul", 
-    "description": "bisa menampung apapun seperti kulkas, tv bahkan impian kamu.", 
-    "tier": 2, 
-    "base_points": 25 
-  },
-  "Buku ala-ala": { 
-    "name": "Ijazah yang hilang", 
-    "description": "Sepertinya ini milik seseorang..", 
-    "tier": 3, 
-    "base_points": 50 
-  },
-  "mahkota": { 
-    "name": "Mahkota raja", 
-    "description": "Lebih berharga daripada kebun sawit", 
-    "tier": 3, 
-    "base_points": 50 
-  }
-  }
+  "common": [
+    { "item_id": "sandalswallow", "name": "Sandal Suwaloow", "description": "Pasangan hilang entah kemana", "minPercent": 0.75 },
+    { "item_id": "snek", "name": "Snek populer", "description": "Jadi rebutan di koperasi", "minPercent": 0.4 },
+    { "item_id": "es_teh_manis", "name": "Sweet Es teh", "description": "Menyegarkan jiwa yang bersedih", "minPercent": 0 }
+  ],
+  "rare": [
+    { "item_id": "parfum", "name": "Parfum mahal", "description": "Membuatmu wangi dan disukai banyak orang", "minPercent": 0.75 },
+    { "item_id": "dasi", "name": "Dasi kebanggaan", "description": "jika tidak ada tatib bertindak.", "minPercent": 0.4 },
+    { "item_id": "kunci", "name": "Kunci emas", "description": "bisa membuka pintu disekitar sini", "minPercent": 0 }
+  ],
+  "epic": [
+    { "item_id": "router", "name": "Router Fb LING", "description": "Sipaling dicari kaum mendang-mending.", "minPercent": 0.75 },
+    { "item_id": "chargerhp", "name": "Charger HP langka", "description": "Teman setia yang dipake rebutan genZ.", "minPercent": 0.4 },
+    { "item_id": "micpenaikihsg", "name": "Mic pengguncang negara", "description": "sekali bicara kiamat maju 1 hari", "minPercent": 0 }
+  ],
+  "legendary": [
+    { "item_id": "kopyah", "name": "Songkok Pak Rahmad", "description": "Songkok misterius pak rahmad yang tahan banting.", "minPercent": 0.75 },
+    { "item_id": "hpkuat", "name": "HP Nokia 3310", "description": "Konon katanya tidak bisa dihancurkan oleh tangan manusia biasa.", "minPercent": 0.4 },
+    { "item_id": "kamerabunabila", "name": "Kamera bu Nabila", "description": "Lebih tajam dari mata elang, bisa melihat masa depan.", "minPercent": 0 }
+  ],
+  "mythic": [
+    { "item_id": "mahkota", "name": "Mahkota raja", "description": "Lebih berharga daripada kebun sawit", "minPercent": 0.75 },
+    { "item_id": "buku_ala_ala", "name": "Buku ala-ala", "description": "saat buku ini tercipta 5 gunung meletus, dan hutan terbakar", "minPercent": 0.4 },
+    { "item_id": "ijazah", "name": "Ijazah yang hilang", "description": "Sepertinya ini milik seseorang..", "minPercent": 0.15 },
+    { "item_id": "malapangankerja", "name": "Map yang dijanjikan", "description": "bisa digunakan mencari 19 juta lapangan pekerjaan.", "minPercent": 0 }
+  ]
+}

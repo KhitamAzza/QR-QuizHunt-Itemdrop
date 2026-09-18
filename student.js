@@ -41,25 +41,29 @@ const screenFlash = document.getElementById('screen-flash');
 const scrollOverlay = document.getElementById('scroll-overlay');
 const parchmentOverlay = document.getElementById('parchment-overlay');
 
-const RARITY_TIME_LIMITS = { mythic: 5000, legendary: 10000, epic: 15000, rare: 20000, common: 30000 };
+// Rarity/time-limit table and the speed/timeout multiplier curves all come
+// from GAME_CONFIG now (see core.js), fetched from Firebase's /config node
+// so these can be tuned without editing code. Always read GAME_CONFIG.* at
+// the point of use (not into a const captured at load time) — fetchGameConfig
+// replaces the whole GAME_CONFIG object once the fetch resolves, so an early
+// reference to e.g. GAME_CONFIG.timeLimits would go stale.
 
 // Single source of truth for scoring multipliers. Used both to compute the
 // points a correct answer earns AND to display/store the loot drop value, so
 // the two numbers can never drift apart again.
 function getSpeedMultiplier(timeRemaining, timeLimit) {
-    // Answered in the fastest ~1/6 of the time -> 100% value
-    if (timeRemaining >= timeLimit * 0.833) return 1.0;
-    // Answered in the fastest ~2/3 of the time -> 70% value
-    if (timeRemaining >= timeLimit * 0.333) return 0.7;
+    const { fast, medium } = GAME_CONFIG.speedThresholds;
+    // Answered in the fastest slice of time -> 100% value
+    if (timeRemaining >= timeLimit * fast) return 1.0;
+    // Answered reasonably quickly -> 70% value
+    if (timeRemaining >= timeLimit * medium) return 0.7;
     // Answered, but slowly -> 50% value
     return 0.5;
 }
 
 function getTimeoutMultiplier(timeouts) {
-    if (timeouts >= 3) return 0;      // 3rd timeout on this question = no score, no loot
-    if (timeouts === 2) return 0.5;
-    if (timeouts === 1) return 0.7;
-    return 1.0;                       // Never timed out on this question
+    if (timeouts >= 3) return 0; // 3rd timeout on this question = no score, no loot (not configurable)
+    return GAME_CONFIG.timeoutMultipliers[timeouts] ?? 1.0;
 }
 const CHEST_SUSPENSE_PHRASES = [
     "Berani buka kotak ini?",
@@ -323,7 +327,7 @@ function renderParchmentOptions(qData) {
 }
 
 function startParchmentTimer(rarity) {
-    const timeLimit = RARITY_TIME_LIMITS[rarity] || 30000;
+    const timeLimit = GAME_CONFIG.timeLimits[rarity] || 30000;
     runTimer(timeLimit, '.parchment-timer-bar', '.parchment-timer-text', () => handleTimeUp('parchment'));
 }
 
@@ -390,7 +394,7 @@ async function submitAnswer(selectedOption, source = 'parchment') {
 
     const isCorrect = qData && (selectedOption === qData.correct_answer);
     const rarity = qData && qData.rarity ? qData.rarity.toLowerCase().trim() : 'common';
-    const basePoints = { common: 10, rare: 25, epic: 50, legendary: 100, mythic: 250 }[rarity] || 10;
+    const basePoints = GAME_CONFIG.rarityPoints[rarity] || 10;
 
     // 2. Calculate time remaining, then the actual points this answer is
     // worth: base rarity points x speed multiplier x timeout multiplier.
@@ -404,7 +408,7 @@ async function submitAnswer(selectedOption, source = 'parchment') {
         const secsLeft = parseInt(timerTextEl.textContent.replace('s', ''));
         timeRemaining = (secsLeft || 0) * 1000;
     }
-    const timeLimit = RARITY_TIME_LIMITS[rarity] || 30000;
+    const timeLimit = GAME_CONFIG.timeLimits[rarity] || 30000;
     const timeouts = currentUser.questionTimeouts[currentQuestionId] || 0;
     const speedMultiplier = getSpeedMultiplier(timeRemaining, timeLimit);
     const timeoutMultiplier = getTimeoutMultiplier(timeouts);
@@ -875,10 +879,13 @@ handleTimeUp = function(source) {
 };
 
 // 2. Pick a Loot Item & Show Modal
-// Score is now calculated once, in submitAnswer, and passed in as
-// pointsEarned — this function only decides which collectible drops (still
-// gated by rarity/speed/timeouts) and displays/stores that same number, so
-// the loot value can never drift from the score on the submission.
+// Score is calculated once, in submitAnswer, and passed in as pointsEarned —
+// this function never touches score. It only decides WHICH item drops:
+// each rarity in loot_table.json has its own ordered list of speed
+// brackets (e.g. answer with >=75% of the time left -> this item, >=40% ->
+// that item, otherwise -> the fallback item), completely independent of how
+// score is computed. Changing bracket thresholds or which items sit in them
+// never affects scoring, and vice versa.
 async function processLootDrop(timeRemaining, timeLimit, questionRarity, pointsEarned) {
     // Nothing to show if this run scored 0 (e.g. 3rd+ timeout on this question)
     if (!pointsEarned || pointsEarned <= 0) {
@@ -886,41 +893,40 @@ async function processLootDrop(timeRemaining, timeLimit, questionRarity, pointsE
         return null;
     }
 
-    // 1. Map Question Rarity to Loot Tier (1, 2, or 3)
-    const RARITY_TO_TIER_MAP = { 'common': 1, 'rare': 1, 'epic': 2, 'legendary': 2, 'mythic': 3 };
-    const maxTierByRarity = RARITY_TO_TIER_MAP[questionRarity] || 1;
-
-    // 2. Check Timeouts (The "Lock" Mechanic) — caps which tier can drop
     const timeouts = currentUser.questionTimeouts[currentQuestionId] || 0;
     if (timeouts >= 3) { resetToScanner(); return null; } // Safety net; pointsEarned would already be 0 here
 
-    let maxTierByTimeout = 3;
-    if (timeouts === 1) maxTierByTimeout = 2; 
-    if (timeouts === 2) maxTierByTimeout = 1; 
+    // How much of the time limit is left, as a fraction (0 = none, 1 = all).
+    let speedPercent = timeLimit > 0 ? (timeRemaining / timeLimit) : 0;
+    speedPercent = Math.max(0, Math.min(1, speedPercent));
 
-    // 3. Check Speed (Time Remaining) — caps which tier can drop
-    let speedTier = 1;
-    if (timeRemaining > (timeLimit * 0.66)) speedTier = 3; // Fastest (Top 33% of time)
-    else if (timeRemaining > (timeLimit * 0.33)) speedTier = 2; // Medium
+    // Prior timeouts on THIS question degrade the reachable bracket — same
+    // intent as the old tier cap, translated to the new percent system:
+    // one timeout blocks the top bracket, two forces the bottom one
+    // regardless of actual speed.
+    if (timeouts === 2) speedPercent = 0;
+    else if (timeouts === 1) speedPercent = Math.min(speedPercent, 0.5);
 
-    // 4. Calculate Final Tier
-    const finalTier = Math.min(speedTier, maxTierByRarity, maxTierByTimeout);
+    const rarityDrops = (window.lootTable || {})[questionRarity];
+    if (!rarityDrops || rarityDrops.length === 0) { resetToScanner(); return null; }
 
-    // 5. Find Items matching this Tier
-    const possibleItems = Object.entries(window.lootTable || {}).filter(([id, item]) => item.tier === finalTier);
-    if (possibleItems.length === 0) { resetToScanner(); return null; }
+    // Brackets can be listed in any order in the JSON — sort by minPercent
+    // descending and take the first (highest) one the student qualifies
+    // for. Falls back to the lowest bracket if somehow none match (e.g. a
+    // rarity's brackets don't reach all the way down to 0).
+    const sortedDrops = [...rarityDrops].sort((a, b) => b.minPercent - a.minPercent);
+    const drop = sortedDrops.find(d => speedPercent >= d.minPercent) || sortedDrops[sortedDrops.length - 1];
+    const itemId = drop.item_id;
+    const itemData = drop;
 
-    // Pick Random Item
-    const [itemId, itemData] = possibleItems[Math.floor(Math.random() * possibleItems.length)];
-
-    // 6. Populate the Loot Modal with the score submitAnswer already computed
+    // Populate the Loot Modal with the score submitAnswer already computed
     document.getElementById('loot-icon').src = `assets/items/${itemId}.png`;
     document.getElementById('loot-title').textContent = itemData.name;
     document.getElementById('loot-desc').textContent = itemData.description;
-    document.getElementById('loot-tier').textContent = `Level ${finalTier}`;
+    document.getElementById('loot-tier').textContent = `${questionRarity.charAt(0).toUpperCase()}${questionRarity.slice(1)} drop`;
     document.getElementById('loot-points').textContent = `+${pointsEarned} Pts`;
 
-    // 7. Show Modal & Handle "Add to Inventory"
+    // Show Modal & Handle "Add to Inventory"
     const lootModal = document.getElementById('loot-reveal-modal');
     lootModal.classList.remove('hidden');
 
@@ -975,7 +981,7 @@ function renderInventoryGrid() {
     });
 
     for (const [itemId, count] of Object.entries(itemCounts)) {
-        const item = (window.lootTable || {})[itemId];
+        const item = (window.lootItemsById || {})[itemId];
         if (!item) continue;
 
         const slot = document.createElement('div');
@@ -989,7 +995,7 @@ function renderInventoryGrid() {
             document.getElementById('detail-icon').src = `assets/items/${itemId}.png`;
             document.getElementById('detail-title').textContent = item.name;
             document.getElementById('detail-desc').textContent = item.description;
-            document.getElementById('detail-tier').textContent = `Level ${item.tier}`;
+            document.getElementById('detail-tier').textContent = `${item.rarity.charAt(0).toUpperCase()}${item.rarity.slice(1)} drop`;
             document.getElementById('detail-points').textContent = `Value: ${itemValues[itemId]} Pts`;
             if (itemDetailModal) itemDetailModal.classList.remove('hidden');
         });

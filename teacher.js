@@ -13,7 +13,6 @@ if (typeof GAME_CONFIG === 'undefined') {
     window.GAME_CONFIG = {
         rarityPoints: { common: 10, rare: 25, epic: 50, legendary: 100, mythic: 250 },
         timeLimits: { common: 30000, rare: 20000, epic: 15000, legendary: 10000, mythic: 5000 },
-        rarityToTier: { common: 1, rare: 1, epic: 2, legendary: 2, mythic: 3 },
         speedThresholds: { fast: 0.833, medium: 0.333 },
         timeoutMultipliers: { 0: 1.0, 1: 0.7, 2: 0.5 },
         bombPenalty: 30
@@ -376,9 +375,6 @@ if (saveConfigBtn) {
                 legendary: (Number(getEl('cfg-time-legendary').value) || 10) * 1000,
                 mythic: (Number(getEl('cfg-time-mythic').value) || 5) * 1000
             },
-            // Not exposed in this form (rarely tweaked) — carried over as-is
-            // so saving the form above doesn't wipe it out.
-            rarityToTier: GAME_CONFIG.rarityToTier,
             speedThresholds: {
                 fast: Number(getEl('cfg-speed-fast').value) || 0.833,
                 medium: Number(getEl('cfg-speed-medium').value) || 0.333
