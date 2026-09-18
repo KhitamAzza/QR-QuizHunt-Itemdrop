@@ -3,6 +3,26 @@
 // ==========================================
 const EXPORT_API_URL = 'https://script.google.com/macros/s/AKfycbyyfXoe7tzhnyGy17O5azHjoS8eVDfP7oh4UXiuX41rxnfo-f2FgX_Mb-cPEYdnejYZwg/exec';
 
+// Safety net: if core.js on this page is an older/out-of-sync version that
+// doesn't define GAME_CONFIG / gameConfigLoaded yet, fall back to built-in
+// defaults here instead of throwing and breaking the whole dashboard. (This
+// should normally never trigger — it just means core.js and teacher.js got
+// deployed out of sync. Make sure you upload the matching set of files.)
+if (typeof GAME_CONFIG === 'undefined') {
+    console.warn("GAME_CONFIG is missing — core.js may be out of date. Using built-in fallback defaults.");
+    window.GAME_CONFIG = {
+        rarityPoints: { common: 10, rare: 25, epic: 50, legendary: 100, mythic: 250 },
+        timeLimits: { common: 30000, rare: 20000, epic: 15000, legendary: 10000, mythic: 5000 },
+        rarityToTier: { common: 1, rare: 1, epic: 2, legendary: 2, mythic: 3 },
+        speedThresholds: { fast: 0.833, medium: 0.333 },
+        timeoutMultipliers: { 0: 1.0, 1: 0.7, 2: 0.5 },
+        bombPenalty: 30
+    };
+}
+if (typeof gameConfigLoaded === 'undefined') {
+    window.gameConfigLoaded = Promise.resolve();
+}
+
 // Helper to safely get elements (prevents crashes if ID is missing)
 const getEl = (id) => document.getElementById(id);
 
