@@ -163,13 +163,8 @@ async function calculateAndRenderLeaderboard() {
             if (!scores[studentPwd].questionsAnswered.has(qId)) {
                 scores[studentPwd].questionsAnswered.add(qId);
                 if (sub.selected_answer === question.correct_answer) {
-                    // Use the score recorded on the submission itself (base
-                    // rarity points x speed/timeout multipliers) so this always
-                    // matches what the student actually earned. Older
-                    // submissions made before scoring was recorded fall back
-                    // to flat rarity points.
                     const rarity = question.rarity ? question.rarity.toLowerCase().trim() : 'common';
-                    scores[studentPwd].rawScore += (typeof sub.points_earned === 'number' ? sub.points_earned : (RARITY_POINTS[rarity] || 10));
+                    scores[studentPwd].rawScore += (RARITY_POINTS[rarity] || 10);
                 }
             }
         });
