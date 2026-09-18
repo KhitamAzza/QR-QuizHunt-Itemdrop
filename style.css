@@ -673,3 +673,75 @@ LOOT & INVENTORY MODALS
 .detail-tier { font-weight: bold; background: #333; color: white; padding: 4px 12px; border-radius: 12px; display: inline-block; margin-bottom: 10px; }
 .detail-desc { font-style: italic; opacity: 0.8; margin-bottom: 10px; line-height: 1.4; }
 .detail-points { font-weight: bold; color: var(--primary-color); margin-bottom: 20px; }
+/* ==========================================
+   STUDENT DASHBOARD — FIT TO ONE SCREEN
+   Locks the scanner screen to the viewport height and lets the camera area
+   flex to fill whatever's left, so header + progress + scanner all sit in
+   one screen with no page scrolling on a normal phone.
+   (#id + .class selectors here intentionally out-specificity the earlier
+   plain-class rules above, so this doesn't need !important anywhere.)
+   ========================================== */
+#student-dashboard.active {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh; /* dynamic viewport height — accounts for mobile browser chrome */
+    overflow: hidden;
+}
+
+#student-dashboard .student-header,
+#student-dashboard #announcement-ticker,
+#student-dashboard #progress-tracker {
+    flex-shrink: 0;
+}
+
+#student-dashboard .student-main {
+    flex: 1 1 auto;
+    min-height: 0;     /* lets this shrink instead of pushing the page taller */
+    overflow-y: auto;  /* safety net only, for very short screens — normally unused */
+    display: flex;
+    flex-direction: column;
+    max-width: 600px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 10px 16px;
+}
+
+#student-dashboard .scanner-container {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+}
+
+#student-dashboard .scanner-container h3 {
+    flex-shrink: 0;
+    margin-bottom: 6px;
+}
+
+#student-dashboard #reader {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    max-width: min(340px, 80vw);
+    max-height: 45vh;
+    margin: 10px auto;
+}
+
+#student-dashboard .manual-entry {
+    flex-shrink: 0;
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+#student-dashboard .student-action-row {
+    flex-shrink: 0;
+    margin: 10px auto !important;
+}
+
+@media (max-width: 600px) {
+    #student-dashboard .student-header { padding: 10px 15px; }
+    #student-dashboard #progress-tracker { padding: 8px 15px; }
+    #student-dashboard .scanner-container h3 { font-size: 1rem; }
+}
