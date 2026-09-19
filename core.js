@@ -40,37 +40,6 @@ let GAME_CONFIG = {
 // slow connection.
 let gameConfigLoaded = fetchGameConfig();
 
-// Same pattern as gameConfigLoaded, for loot_table.json — kicked off
-// immediately so it's almost always resolved by the time it's needed, and
-// awaited explicitly (see the login handler) instead of the old
-// "if (!window.lootTable) fetch(...)" pattern, which could leave
-// window.lootTable undefined if a student answered a question fast enough
-// to race the fetch — silently skipping the loot drop for that answer even
-// though the score had already been submitted (score and loot are
-// separate systems; only the loot half was lost).
-let lootTableLoaded = fetchLootTable();
-
-async function fetchLootTable() {
-    try {
-        const res = await fetch('loot_table.json');
-        const data = await res.json();
-        window.lootTable = data;
-        window.lootItemsById = {};
-        Object.entries(data).forEach(([rarity, drops]) => {
-            drops.forEach(drop => {
-                // NOTE: if the same item_id is ever reused across two
-                // different rarities (or twice within one), only the last
-                // one encountered here survives in lootItemsById — used
-                // for inventory detail lookups. Keep every item_id unique
-                // across the whole file.
-                window.lootItemsById[drop.item_id] = { ...drop, rarity };
-            });
-        });
-    } catch (e) {
-        console.error("Failed to load loot_table.json — loot drops will be unavailable until this succeeds.", e);
-    }
-}
-
 async function fetchGameConfig() {
     try {
         const res = await fetch(`${FIREBASE_URL}/config.json?auth=${FIREBASE_SECRET}`);
@@ -142,11 +111,8 @@ loginBtn.addEventListener('click', async () => {
     const password = passwordInput.value.trim();
     if (!password) return alert("Please enter your password!");
 
-    // Make sure tunable rules and the loot table are both loaded before
-    // either dashboard uses them — this is what actually guarantees
-    // window.lootTable is populated before a student can reach a question,
-    // instead of hoping the fetch beat them to it.
-    await Promise.all([gameConfigLoaded, lootTableLoaded]);
+    // Make sure tunable rules are loaded before either dashboard uses them
+    await gameConfigLoaded;
 
     // Teacher Route
     if (password.toLowerCase() === 'admin') {
@@ -273,9 +239,24 @@ loginBtn.addEventListener('click', async () => {
             const isFinished = resolvedChests >= currentUser.totalQuestions && currentUser.totalQuestions > 0;
 
             // 5. Route to correct screen
-            // loot_table.json is loaded via lootTableLoaded (awaited in the
-            // login handler below), so window.lootTable / lootItemsById are
-            // already populated by the time this screen is reachable.
+            // Load the Loot Table from your local folder. window.lootTable is
+            // the raw { rarity: [ {item_id, minPercent, ...}, ... ] } shape
+            // used to pick a drop; window.lootItemsById is a flattened
+            // item_id -> item lookup, used for inventory display.
+            if (!window.lootTable) {
+                fetch('loot_table.json')
+                    .then(res => res.json())
+                    .then(data => {
+                        window.lootTable = data;
+                        window.lootItemsById = {};
+                        Object.entries(data).forEach(([rarity, drops]) => {
+                            drops.forEach(drop => {
+                                window.lootItemsById[drop.item_id] = { ...drop, rarity };
+                            });
+                        });
+                    })
+                    .catch(err => console.error("Failed to load loot_table.json", err));
+            }
             displayName.textContent = currentUser.name;
             displayClass.textContent = currentUser.class;
             

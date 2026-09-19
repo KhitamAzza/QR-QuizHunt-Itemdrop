@@ -10,12 +10,13 @@
     { "item_id": "kunci", "name": "Kunci emas", "description": "bisa membuka pintu disekitar sini", "minPercent": 0 }
   ],
   "epic": [
-    { "item_id": "router", "name": "Router Fb LING", "description": "Sipaling dicari kaum mendang-mending.", "minPercent": 0.75 },
+    { "item_id": "router", "name": "Router Fb LING", "description": "Sipaling dicari kaum mendang-mending.", "minPercent": 0.8 },
+    { "item_id": "TWSkaumhave", "name": "TWS Kaum Have", "description": "Favorit GenZ biar keliatan kaum HAVE", "minPercent": 0.6 },
     { "item_id": "chargerhp", "name": "Charger HP langka", "description": "Teman setia yang dipake rebutan genZ.", "minPercent": 0.4 },
-    { "item_id": "micpenaikihsg", "name": "Mic pengguncang negara", "description": "sekali bicara kiamat maju 1 hari", "minPercent": 0 }
+    { "item_id": "micpenaikihsg", "name": "Mic pengguncang negara", "description": "sekali bicara kiamat maju 1 hari", "minPercent": 0.2 }
   ],
   "legendary": [
-    { "item_id": "kopyah", "name": "Songkok Pak Rahmad", "description": "Songkok misterius pak rahmad yang tahan banting.", "minPercent": 0.75 },
+    { "item_id": "kopyah", "name": "Songkok Pak Rahmad", "description": "Songkok misterius pak rahmad yang tahan banting.", "minPercent": 0.8 },
     { "item_id": "hpkuat", "name": "HP Nokia 3310", "description": "Konon katanya tidak bisa dihancurkan oleh tangan manusia biasa.", "minPercent": 0.4 },
     { "item_id": "kamerabunabila", "name": "Kamera bu Nabila", "description": "Lebih tajam dari mata elang, bisa melihat masa depan.", "minPercent": 0 }
   ],

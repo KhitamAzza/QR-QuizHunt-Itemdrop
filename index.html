@@ -184,11 +184,9 @@
                     </div>
 
                     <h3 style="margin-top: 20px; margin-bottom: 8px; color: var(--primary-color);">Multiplier Kecepatan Jawab</h3>
-                    <div class="config-grid">
-                        <label>Cepat (nilai 100%)<input type="number" id="cfg-speed-fast" step="0.01" min="0" max="1"></label>
-                        <label>Sedang (nilai 70%)<input type="number" id="cfg-speed-medium" step="0.01" min="0" max="1"></label>
-                    </div>
-                    <p style="font-size: 0.8rem; opacity: 0.6; margin-top: 6px;">Angka 0–1 = persentase sisa waktu. Contoh: 0.833 berarti harus menjawab saat masih ≥83% waktu tersisa untuk dapat nilai penuh.</p>
+                    <div id="speed-thresholds-list"></div>
+                    <button type="button" id="add-speed-threshold-btn" class="btn-primary" style="width: auto; padding: 8px 16px; font-size: 0.85rem;">➕ Tambah Tier</button>
+                    <p style="font-size: 0.8rem; opacity: 0.6; margin-top: 6px;">Angka "% waktu tersisa min." = 0–1, persentase sisa waktu yang dibutuhkan untuk dapat multiplier itu. Contoh: 0.833 berarti harus menjawab saat masih ≥83% waktu tersisa. Tambah/hapus tier sesuka hati — minimal harus ada 1 tier dengan nilai 0 sebagai batas paling bawah (kalau lupa, otomatis ditambahkan saat disimpan).</p>
 
                     <h3 style="margin-top: 20px; margin-bottom: 8px; color: var(--primary-color);">Multiplier Timeout (per soal)</h3>
                     <div class="config-grid">

@@ -13,7 +13,11 @@ if (typeof GAME_CONFIG === 'undefined') {
     window.GAME_CONFIG = {
         rarityPoints: { common: 10, rare: 25, epic: 50, legendary: 100, mythic: 250 },
         timeLimits: { common: 30000, rare: 20000, epic: 15000, legendary: 10000, mythic: 5000 },
-        speedThresholds: { fast: 0.833, medium: 0.333 },
+        speedThresholds: [
+            { minPercent: 0.833, multiplier: 1.0 },
+            { minPercent: 0.333, multiplier: 0.7 },
+            { minPercent: 0,     multiplier: 0.5 }
+        ],
         timeoutMultipliers: { 0: 1.0, 1: 0.7, 2: 0.5 },
         bombPenalty: 30
     };
@@ -36,6 +40,8 @@ const exportSheetsBtn = getEl('export-sheets-btn');
 const saveConfigBtn = getEl('save-config-btn');
 const configSaveStatus = getEl('config-save-status');
 const configLockNotice = getEl('config-lock-notice');
+const speedThresholdsList = getEl('speed-thresholds-list');
+const addSpeedThresholdBtn = getEl('add-speed-threshold-btn');
 
 let currentLeaderboardData = [];
 let currentMaxScore = 0;
@@ -310,8 +316,7 @@ function populateConfigForm() {
     getEl('cfg-time-legendary').value = GAME_CONFIG.timeLimits.legendary / 1000;
     getEl('cfg-time-mythic').value = GAME_CONFIG.timeLimits.mythic / 1000;
 
-    getEl('cfg-speed-fast').value = GAME_CONFIG.speedThresholds.fast;
-    getEl('cfg-speed-medium').value = GAME_CONFIG.speedThresholds.medium;
+    renderSpeedThresholdRows(GAME_CONFIG.speedThresholds);
 
     getEl('cfg-timeout-0').value = GAME_CONFIG.timeoutMultipliers[0];
     getEl('cfg-timeout-1').value = GAME_CONFIG.timeoutMultipliers[1];
@@ -320,8 +325,76 @@ function populateConfigForm() {
     getEl('cfg-bomb-penalty').value = GAME_CONFIG.bombPenalty;
 }
 
+// ==========================================
+// SPEED THRESHOLDS — dynamic tier rows
+// ==========================================
+// GAME_CONFIG.speedThresholds is an array of { minPercent, multiplier }
+// tiers, any length (see core.js). This renders one row per tier instead
+// of fixed "fast/medium" fields, so the teacher can add or remove tiers —
+// 2, 3, 5, however many — and the game (student.js) automatically scores
+// against however many tiers are actually saved.
+
+function createSpeedThresholdRow(minPercent, multiplier) {
+    const row = document.createElement('div');
+    row.className = 'speed-threshold-row';
+    row.style.cssText = 'display:flex; gap:10px; align-items:flex-end; margin-bottom:8px;';
+    row.innerHTML = `
+        <label style="flex:1;">% waktu tersisa min.
+            <input type="number" class="cfg-speed-minpercent" step="0.01" min="0" max="1" value="${minPercent}">
+        </label>
+        <label style="flex:1;">Multiplier
+            <input type="number" class="cfg-speed-multiplier" step="0.01" min="0" value="${multiplier}">
+        </label>
+        <button type="button" class="btn-logout btn-remove-tier" style="padding:8px 14px; width:auto;" title="Hapus tier ini">✕</button>
+    `;
+    row.querySelector('.btn-remove-tier').addEventListener('click', () => {
+        // Always keep at least one tier — with zero rows nothing would
+        // ever match a speedPercent and getSpeedMultiplier would break.
+        if (speedThresholdsList.querySelectorAll('.speed-threshold-row').length > 1) {
+            row.remove();
+        } else if (configSaveStatus) {
+            configSaveStatus.style.color = "var(--danger-color)";
+            configSaveStatus.textContent = "⚠️ Minimal harus ada 1 tier kecepatan.";
+        }
+    });
+    return row;
+}
+
+function renderSpeedThresholdRows(thresholds) {
+    if (!speedThresholdsList) return; // config tab not present in this HTML build
+    speedThresholdsList.innerHTML = '';
+    const sorted = [...(thresholds || [])].sort((a, b) => b.minPercent - a.minPercent);
+    (sorted.length > 0 ? sorted : [{ minPercent: 0, multiplier: 1.0 }])
+        .forEach(t => speedThresholdsList.appendChild(createSpeedThresholdRow(t.minPercent, t.multiplier)));
+}
+
+// Reads whatever rows currently exist in the form (including ones the
+// teacher just added/removed) back out as a plain array, and guarantees a
+// floor tier (minPercent: 0) is always included even if the teacher never
+// added one — otherwise a fast answer near the very end of time could fail
+// to match any tier at all.
+function readSpeedThresholdRows() {
+    if (!speedThresholdsList) return GAME_CONFIG.speedThresholds;
+    const rows = [...speedThresholdsList.querySelectorAll('.speed-threshold-row')];
+    const tiers = rows.map(row => ({
+        minPercent: Number(row.querySelector('.cfg-speed-minpercent').value) || 0,
+        multiplier: Number(row.querySelector('.cfg-speed-multiplier').value) || 0
+    }));
+    if (!tiers.some(t => t.minPercent <= 0)) {
+        const lowest = tiers.reduce((min, t) => (t.minPercent < min.minPercent ? t : min), tiers[0]);
+        tiers.push({ minPercent: 0, multiplier: lowest ? lowest.multiplier : 0.5 });
+    }
+    return tiers;
+}
+
+if (addSpeedThresholdBtn) {
+    addSpeedThresholdBtn.addEventListener('click', () => {
+        if (speedThresholdsList) speedThresholdsList.appendChild(createSpeedThresholdRow(0.5, 0.8));
+    });
+}
+
 function updateConfigLockState(locked) {
-    document.querySelectorAll('#tab-config input').forEach(input => { input.disabled = locked; });
+    document.querySelectorAll('#tab-config input, #tab-config button').forEach(input => { input.disabled = locked; });
     if (saveConfigBtn) saveConfigBtn.disabled = locked;
     if (configLockNotice) configLockNotice.classList.toggle('hidden', !locked);
     if (!locked && configSaveStatus) configSaveStatus.textContent = '';
@@ -375,10 +448,7 @@ if (saveConfigBtn) {
                 legendary: (Number(getEl('cfg-time-legendary').value) || 10) * 1000,
                 mythic: (Number(getEl('cfg-time-mythic').value) || 5) * 1000
             },
-            speedThresholds: {
-                fast: Number(getEl('cfg-speed-fast').value) || 0.833,
-                medium: Number(getEl('cfg-speed-medium').value) || 0.333
-            },
+            speedThresholds: readSpeedThresholdRows(),
             timeoutMultipliers: {
                 0: Number(getEl('cfg-timeout-0').value),
                 1: Number(getEl('cfg-timeout-1').value),

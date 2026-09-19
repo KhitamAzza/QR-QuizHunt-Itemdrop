@@ -903,24 +903,8 @@ async function processLootDrop(timeRemaining, timeLimit, questionRarity, pointsE
     let speedPercent = timeLimit > 0 ? (timeRemaining / timeLimit) : 0;
     speedPercent = Math.max(0, Math.min(1, speedPercent));
 
-    // window.lootTable should already be populated — core.js awaits
-    // lootTableLoaded before login can proceed. This is now only a safety
-    // net for a genuinely failed fetch (e.g. bad connection), not the
-    // race condition it used to guard against. Retry once before giving up
-    // silently, and if it still fails, tell the student instead of just
-    // closing — their points are already recorded either way (scoring
-    // happens in submitAnswer, independently of the loot table), so this
-    // never loses points, only the item pickup.
-    let rarityDrops = (window.lootTable || {})[questionRarity];
-    if (!rarityDrops || rarityDrops.length === 0) {
-        await fetchLootTable();
-        rarityDrops = (window.lootTable || {})[questionRarity];
-    }
-    if (!rarityDrops || rarityDrops.length === 0) {
-        alert(`Poin sudah tersimpan (+${pointsEarned}), tapi item loot gagal dimuat. Coba refresh halaman untuk mengambil item berikutnya.`);
-        resetToScanner();
-        return null;
-    }
+    const rarityDrops = (window.lootTable || {})[questionRarity];
+    if (!rarityDrops || rarityDrops.length === 0) { resetToScanner(); return null; }
 
     // Brackets can be listed in any order in the JSON — sort by minPercent
     // descending and take the first (highest) one the student qualifies
