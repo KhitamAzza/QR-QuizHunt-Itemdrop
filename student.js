@@ -52,13 +52,16 @@ const parchmentOverlay = document.getElementById('parchment-overlay');
 // points a correct answer earns AND to display/store the loot drop value, so
 // the two numbers can never drift apart again.
 function getSpeedMultiplier(timeRemaining, timeLimit) {
-    const { fast, medium } = GAME_CONFIG.speedThresholds;
-    // Answered in the fastest slice of time -> 100% value
-    if (timeRemaining >= timeLimit * fast) return 1.0;
-    // Answered reasonably quickly -> 70% value
-    if (timeRemaining >= timeLimit * medium) return 0.7;
-    // Answered, but slowly -> 50% value
-    return 0.5;
+    let speedPercent = timeLimit > 0 ? (timeRemaining / timeLimit) : 0;
+    speedPercent = Math.max(0, Math.min(1, speedPercent));
+
+    // GAME_CONFIG.speedThresholds is an ordered list of any length —
+    // { minPercent, multiplier } tiers. Sort descending and take the
+    // highest tier this answer qualifies for (same pattern used for loot
+    // brackets in processLootDrop), so 2 tiers or 10 both just work.
+    const sorted = [...GAME_CONFIG.speedThresholds].sort((a, b) => b.minPercent - a.minPercent);
+    const tier = sorted.find(t => speedPercent >= t.minPercent) || sorted[sorted.length - 1];
+    return tier.multiplier;
 }
 
 function getTimeoutMultiplier(timeouts) {
@@ -900,21 +903,39 @@ async function processLootDrop(timeRemaining, timeLimit, questionRarity, pointsE
     let speedPercent = timeLimit > 0 ? (timeRemaining / timeLimit) : 0;
     speedPercent = Math.max(0, Math.min(1, speedPercent));
 
-    // Prior timeouts on THIS question degrade the reachable bracket — same
-    // intent as the old tier cap, translated to the new percent system:
-    // one timeout blocks the top bracket, two forces the bottom one
-    // regardless of actual speed.
-    if (timeouts === 2) speedPercent = 0;
-    else if (timeouts === 1) speedPercent = Math.min(speedPercent, 0.5);
-
-    const rarityDrops = (window.lootTable || {})[questionRarity];
-    if (!rarityDrops || rarityDrops.length === 0) { resetToScanner(); return null; }
+    // window.lootTable should already be populated — core.js awaits
+    // lootTableLoaded before login can proceed. This is now only a safety
+    // net for a genuinely failed fetch (e.g. bad connection), not the
+    // race condition it used to guard against. Retry once before giving up
+    // silently, and if it still fails, tell the student instead of just
+    // closing — their points are already recorded either way (scoring
+    // happens in submitAnswer, independently of the loot table), so this
+    // never loses points, only the item pickup.
+    let rarityDrops = (window.lootTable || {})[questionRarity];
+    if (!rarityDrops || rarityDrops.length === 0) {
+        await fetchLootTable();
+        rarityDrops = (window.lootTable || {})[questionRarity];
+    }
+    if (!rarityDrops || rarityDrops.length === 0) {
+        alert(`Poin sudah tersimpan (+${pointsEarned}), tapi item loot gagal dimuat. Coba refresh halaman untuk mengambil item berikutnya.`);
+        resetToScanner();
+        return null;
+    }
 
     // Brackets can be listed in any order in the JSON — sort by minPercent
     // descending and take the first (highest) one the student qualifies
     // for. Falls back to the lowest bracket if somehow none match (e.g. a
     // rarity's brackets don't reach all the way down to 0).
     const sortedDrops = [...rarityDrops].sort((a, b) => b.minPercent - a.minPercent);
+
+    // Prior timeouts on THIS question degrade the reachable bracket: one
+    // timeout blocks the top bracket, two forces the bottom one regardless
+    // of actual speed. The cap for 1 timeout is the 2nd-highest bracket's
+    // own threshold (not a fixed number), so this keeps working correctly
+    // no matter how many brackets this rarity has been configured with.
+    if (timeouts === 2) speedPercent = 0;
+    else if (timeouts === 1 && sortedDrops.length > 1) speedPercent = Math.min(speedPercent, sortedDrops[1].minPercent);
+
     const drop = sortedDrops.find(d => speedPercent >= d.minPercent) || sortedDrops[sortedDrops.length - 1];
     const itemId = drop.item_id;
     const itemData = drop;
