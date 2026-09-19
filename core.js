@@ -18,7 +18,17 @@ let isGameActive = false;
 let GAME_CONFIG = {
     rarityPoints:       { common: 10, rare: 25, epic: 50, legendary: 100, mythic: 250 },
     timeLimits:         { common: 30000, rare: 20000, epic: 15000, legendary: 10000, mythic: 5000 }, // ms
-    speedThresholds:    { fast: 0.833, medium: 0.333 }, // fraction of timeLimit remaining, for score/loot multiplier
+    // Ordered list of score tiers, any length. Each tier requires >= minPercent
+    // of the time limit still remaining to qualify; multiplier is applied to
+    // the base rarity points. getSpeedMultiplier (student.js) sorts these
+    // descending and picks the highest tier the answer qualifies for, so you
+    // can have 2 tiers or 10 — always include one entry with minPercent: 0 as
+    // the floor, or slow answers won't match anything.
+    speedThresholds: [
+        { minPercent: 0.833, multiplier: 1.0 },
+        { minPercent: 0.333, multiplier: 0.7 },
+        { minPercent: 0,     multiplier: 0.5 }
+    ],
     timeoutMultipliers: { 0: 1.0, 1: 0.7, 2: 0.5 },     // 3+ timeouts on one question always = 0, not configurable
     bombPenalty: 30
 };
@@ -29,6 +39,37 @@ let GAME_CONFIG = {
 // GAME_CONFIG for scoring awaits this first, so it's always safe even on a
 // slow connection.
 let gameConfigLoaded = fetchGameConfig();
+
+// Same pattern as gameConfigLoaded, for loot_table.json — kicked off
+// immediately so it's almost always resolved by the time it's needed, and
+// awaited explicitly (see the login handler) instead of the old
+// "if (!window.lootTable) fetch(...)" pattern, which could leave
+// window.lootTable undefined if a student answered a question fast enough
+// to race the fetch — silently skipping the loot drop for that answer even
+// though the score had already been submitted (score and loot are
+// separate systems; only the loot half was lost).
+let lootTableLoaded = fetchLootTable();
+
+async function fetchLootTable() {
+    try {
+        const res = await fetch('loot_table.json');
+        const data = await res.json();
+        window.lootTable = data;
+        window.lootItemsById = {};
+        Object.entries(data).forEach(([rarity, drops]) => {
+            drops.forEach(drop => {
+                // NOTE: if the same item_id is ever reused across two
+                // different rarities (or twice within one), only the last
+                // one encountered here survives in lootItemsById — used
+                // for inventory detail lookups. Keep every item_id unique
+                // across the whole file.
+                window.lootItemsById[drop.item_id] = { ...drop, rarity };
+            });
+        });
+    } catch (e) {
+        console.error("Failed to load loot_table.json — loot drops will be unavailable until this succeeds.", e);
+    }
+}
 
 async function fetchGameConfig() {
     try {
@@ -41,7 +82,15 @@ async function fetchGameConfig() {
             GAME_CONFIG = {
                 rarityPoints: { ...GAME_CONFIG.rarityPoints, ...(remote.rarityPoints || {}) },
                 timeLimits: { ...GAME_CONFIG.timeLimits, ...(remote.timeLimits || {}) },
-                speedThresholds: { ...GAME_CONFIG.speedThresholds, ...(remote.speedThresholds || {}) },
+                // speedThresholds is an ARRAY, not a keyed object — a
+                // one-level-deep {...spread} would merge by array index
+                // instead of replacing tiers, silently corrupting anything
+                // other than a same-length override. Replace it wholesale
+                // when Firebase provides a valid non-empty array, otherwise
+                // keep the built-in default.
+                speedThresholds: (Array.isArray(remote.speedThresholds) && remote.speedThresholds.length > 0)
+                    ? remote.speedThresholds
+                    : GAME_CONFIG.speedThresholds,
                 timeoutMultipliers: { ...GAME_CONFIG.timeoutMultipliers, ...(remote.timeoutMultipliers || {}) },
                 bombPenalty: (typeof remote.bombPenalty === 'number') ? remote.bombPenalty : GAME_CONFIG.bombPenalty
             };
@@ -93,8 +142,11 @@ loginBtn.addEventListener('click', async () => {
     const password = passwordInput.value.trim();
     if (!password) return alert("Please enter your password!");
 
-    // Make sure tunable rules are loaded before either dashboard uses them
-    await gameConfigLoaded;
+    // Make sure tunable rules and the loot table are both loaded before
+    // either dashboard uses them — this is what actually guarantees
+    // window.lootTable is populated before a student can reach a question,
+    // instead of hoping the fetch beat them to it.
+    await Promise.all([gameConfigLoaded, lootTableLoaded]);
 
     // Teacher Route
     if (password.toLowerCase() === 'admin') {
@@ -221,24 +273,9 @@ loginBtn.addEventListener('click', async () => {
             const isFinished = resolvedChests >= currentUser.totalQuestions && currentUser.totalQuestions > 0;
 
             // 5. Route to correct screen
-            // Load the Loot Table from your local folder. window.lootTable is
-            // the raw { rarity: [ {item_id, minPercent, ...}, ... ] } shape
-            // used to pick a drop; window.lootItemsById is a flattened
-            // item_id -> item lookup, used for inventory display.
-            if (!window.lootTable) {
-                fetch('loot_table.json')
-                    .then(res => res.json())
-                    .then(data => {
-                        window.lootTable = data;
-                        window.lootItemsById = {};
-                        Object.entries(data).forEach(([rarity, drops]) => {
-                            drops.forEach(drop => {
-                                window.lootItemsById[drop.item_id] = { ...drop, rarity };
-                            });
-                        });
-                    })
-                    .catch(err => console.error("Failed to load loot_table.json", err));
-            }
+            // loot_table.json is loaded via lootTableLoaded (awaited in the
+            // login handler below), so window.lootTable / lootItemsById are
+            // already populated by the time this screen is reachable.
             displayName.textContent = currentUser.name;
             displayClass.textContent = currentUser.class;
             
@@ -315,7 +352,13 @@ gameOverLogoutBtn.addEventListener('click', handleLogout);
 //   "config": {
 //     "rarityPoints":       { "common": 10, "rare": 25, "epic": 50, "legendary": 100, "mythic": 250 },
 //     "timeLimits":         { "common": 30000, "rare": 20000, "epic": 15000, "legendary": 10000, "mythic": 5000 },
-//     "speedThresholds":    { "fast": 0.833, "medium": 0.333 },
+//     "speedThresholds": [
+//       { "minPercent": 0.8, "multiplier": 1.0 },
+//       { "minPercent": 0.6, "multiplier": 0.85 },
+//       { "minPercent": 0.4, "multiplier": 0.7 },
+//       { "minPercent": 0.2, "multiplier": 0.55 },
+//       { "minPercent": 0,   "multiplier": 0.4 }
+//     ],
 //     "timeoutMultipliers": { "0": 1.0, "1": 0.7, "2": 0.5 },
 //     "bombPenalty": 30
 //   }
